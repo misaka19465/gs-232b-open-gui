@@ -420,6 +420,10 @@
             <translation>大圆图</translation>
         </message>
         <message>
+            <source>Always on top</source>
+            <translation>窗口置顶</translation>
+        </message>
+        <message>
             <location filename="../MainWindow.cpp" line="72" />
             <source>Network</source>
             <translation>网络</translation>

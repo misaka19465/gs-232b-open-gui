@@ -51,6 +51,7 @@ void AppSettingsTests::defaultsDoNotWrite()
     QCOMPARE(settings.connectionAddress(), QStringLiteral("192.168.1.50"));
     QVERIFY(!settings.networkMode());
     QVERIFY(!settings.consoleVisible());
+    QVERIFY(!settings.alwaysOnTop());
     QVERIFY(!settings.greatCircleMapEnabled());
     QVERIFY(settings.stationGrid().isEmpty());
     QCOMPARE(settings.azimuthOffset(), 0);
@@ -83,14 +84,17 @@ void AppSettingsTests::savesImmediatelyAndPreservesOtherKeys()
     AppSettings settings(fileName);
     for (bool visible : {true, false}) {
         QVERIFY(settings.setConsoleVisible(visible));
+        QVERIFY(settings.setAlwaysOnTop(visible));
         QVERIFY(settings.setGreatCircleMapEnabled(visible));
         QVERIFY(settings.setShortestPathEnabled(visible));
         QFile file(fileName);
         QVERIFY(file.open(QIODevice::ReadOnly));
         const QByteArray content = file.readAll();
         QVERIFY(content.contains(visible ? "consoleVisible=true" : "consoleVisible=false"));
+        QVERIFY(content.contains(visible ? "alwaysOnTop=true" : "alwaysOnTop=false"));
         AppSettings reopened(fileName);
         QCOMPARE(reopened.consoleVisible(), visible);
+        QCOMPARE(reopened.alwaysOnTop(), visible);
         QCOMPARE(reopened.greatCircleMapEnabled(), visible);
         QCOMPARE(reopened.shortestPathEnabled(), visible);
         QCOMPARE(reopened.presetAngle(AppSettings::Axis::Azimuth, 3), 123);
@@ -260,6 +264,7 @@ void AppSettingsTests::invalidValuesUseDefaults()
     const QByteArray content = "[General]\nazimuthPreset1=" + azimuth +
                                "\nelevationPreset1=" + elevation +
                                "\n[view]\nconsoleVisible=" + console +
+                               "\nalwaysOnTop=" + console +
                                "\ngreatCircleMapEnabled=" + console + '\n';
     {
         QFile file(fileName);
@@ -270,6 +275,7 @@ void AppSettingsTests::invalidValuesUseDefaults()
     QCOMPARE(settings.presetAngle(AppSettings::Axis::Azimuth, 1), 45);
     QCOMPARE(settings.presetAngle(AppSettings::Axis::Elevation, 1), 25);
     QCOMPARE(settings.consoleVisible(), visible);
+    QCOMPARE(settings.alwaysOnTop(), visible);
     QCOMPARE(settings.greatCircleMapEnabled(), visible);
     QFile file(fileName);
     QVERIFY(file.open(QIODevice::ReadOnly));

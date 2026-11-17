@@ -109,6 +109,7 @@ set(GUI_SOURCES
     CommunicationProtocol.cpp
     CommunicationProtocol.h
     MainWindow.cpp
+    MainWindowView.cpp
     MainWindowConnection.cpp
     MainWindowCalibration.cpp
     MainWindowNetworkAddresses.cpp

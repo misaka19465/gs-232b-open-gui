@@ -11,6 +11,7 @@ const QString BaudRateKey = QStringLiteral("connection/baudRate");
 const QString ConnectionAddressKey = QStringLiteral("connection/address");
 const QString NetworkModeKey = QStringLiteral("connection/networkMode");
 const QString ConsoleVisibleKey = QStringLiteral("view/consoleVisible");
+const QString AlwaysOnTopKey = QStringLiteral("view/alwaysOnTop");
 const QString GreatCircleMapEnabledKey = QStringLiteral("view/greatCircleMapEnabled");
 const QString StationGridKey = QStringLiteral("station/grid");
 const QString AzimuthOffsetKey = QStringLiteral("rotor/azimuthOffset");
@@ -122,6 +123,16 @@ bool AppSettings::consoleVisible() const
 bool AppSettings::setConsoleVisible(bool visible)
 {
     return storeValue(ConsoleVisibleKey, visible);
+}
+
+bool AppSettings::alwaysOnTop() const
+{
+    return readBoolean(m_settings.value(AlwaysOnTopKey));
+}
+
+bool AppSettings::setAlwaysOnTop(bool enabled)
+{
+    return storeValue(AlwaysOnTopKey, enabled);
 }
 
 bool AppSettings::greatCircleMapEnabled() const

@@ -44,6 +44,9 @@ private:
     void showEvent(QShowEvent *event) override;
     void openConnectionDialog();
     void createMenus();
+    void createViewMenu();
+    /** @brief 应用窗口置顶标志，保留可见性和最大化等窗口状态。 */
+    void setAlwaysOnTop(bool enabled);
     void createN1mmMenu(QMenu *bridge);
     void createGridTrackerMenu(QMenu *bridge);
     void updateBridgeState();

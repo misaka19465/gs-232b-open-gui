@@ -256,35 +256,8 @@ void MainWindow::createMenus()
     });
     auto *files = menuBar()->addMenu(tr("Files"));
     files->addAction(tr("Exit"), qApp, &QCoreApplication::quit);
-    auto *view = menuBar()->addMenu(tr("View"));
-    auto *consoleAction = view->addAction(tr("Console"));
-    consoleAction->setObjectName(QStringLiteral("consoleAction"));
-    consoleAction->setCheckable(true);
-    const bool consoleVisible = AppSettings().consoleVisible();
-    consoleAction->setChecked(consoleVisible);
-    m_console->setVisible(consoleVisible);
-    // NOTE: 恢复状态后再连接保存，启动读取不覆盖缺失或无效的配置值。
-    connect(consoleAction, &QAction::toggled, this, [this](bool visible) {
-        m_console->setVisible(visible);
-        if (!AppSettings().setConsoleVisible(visible))
-            QMessageBox::warning(this, tr("Application settings"),
-                                 tr("Could not save application settings."));
-    });
-    auto *mapAction = view->addAction(tr("Great-circle map"));
-    mapAction->setObjectName(QStringLiteral("greatCircleMapAction"));
-    mapAction->setCheckable(true);
+    createViewMenu();
     const AppSettings preferences;
-    m_control->setStationGrid(preferences.stationGrid());
-    mapAction->setChecked(preferences.greatCircleMapEnabled());
-    m_control->setGreatCircleMapEnabled(mapAction->isChecked());
-    connect(mapAction, &QAction::toggled, this, [this](bool enabled) {
-        m_control->setGreatCircleMapEnabled(enabled);
-        if (!AppSettings().setGreatCircleMapEnabled(enabled))
-            QMessageBox::warning(this, tr("Application settings"),
-                                 tr("Could not save application settings."));
-        if (enabled && AppSettings().stationGrid().isEmpty())
-            openStationGrid();
-    });
     auto *settings = menuBar()->addMenu(tr("Settings"));
     auto *stationGridAction = settings->addAction(
         tr("My grid..."), this, &MainWindow::openStationGrid);

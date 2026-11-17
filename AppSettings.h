@@ -42,6 +42,11 @@ public:
     /** @return 立即同步控制台显示偏好到存储是否成功。 */
     bool setConsoleVisible(bool visible);
 
+    /** @brief 读取窗口置顶偏好；缺失或无效时默认关闭。 */
+    bool alwaysOnTop() const;
+    /** @return 立即同步窗口置顶偏好到存储是否成功。 */
+    bool setAlwaysOnTop(bool enabled);
+
     /** @brief 读取罗盘大圆图模式；缺失或无效时默认关闭。 */
     bool greatCircleMapEnabled() const;
     /** @return 立即同步大圆图模式偏好到存储是否成功。 */
