@@ -8,11 +8,21 @@
 #include <QNetworkRequest>
 #include <QPainter>
 #include <QPainterPath>
-#include <QPdfDocument>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QUrlQuery>
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QPdfDocument>
+#else
+#include <cstdint>
+#include <exception>
+#include <thread>
+#include <vector>
+#include <winrt/Windows.Data.Pdf.h>
+#include <winrt/Windows.Storage.Streams.h>
+#endif
 
 namespace {
 
@@ -24,6 +34,8 @@ QImage renderMap(QByteArray &pdf)
     if (!pdf.startsWith("%PDF-"))
         return {};
 
+    QImage page;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QBuffer buffer(&pdf);
     buffer.open(QIODevice::ReadOnly);
     QPdfDocument document;
@@ -34,7 +46,59 @@ QImage renderMap(QByteArray &pdf)
         document.pagePointSize(0) != QSizeF(288, 288))
         return {};
 
-    const QImage page = document.render(0, QSize(1536, 1536));
+    page = document.render(0, QSize(1536, 1536));
+#else
+    // Qt 5.15's public Windows SDK does not ship QtPdf. Use Windows.Data.Pdf,
+    // present on supported Windows 10 systems, to preserve the azimuth map.
+    std::exception_ptr renderFailure;
+    std::thread renderer([&] {
+        bool apartmentInitialized = false;
+        try {
+            winrt::init_apartment(winrt::apartment_type::multi_threaded);
+            apartmentInitialized = true;
+
+            using namespace winrt::Windows::Data::Pdf;
+            using namespace winrt::Windows::Storage::Streams;
+
+            InMemoryRandomAccessStream pdfStream;
+            DataWriter pdfWriter(pdfStream);
+            const auto *pdfBegin = reinterpret_cast<const uint8_t *>(pdf.constData());
+            pdfWriter.WriteBytes(winrt::array_view<const uint8_t>(pdfBegin, pdfBegin + pdf.size()));
+            pdfWriter.StoreAsync().get();
+            pdfWriter.DetachStream();
+            pdfStream.Seek(0);
+
+            const PdfDocument document = PdfDocument::LoadFromStreamAsync(pdfStream).get();
+            if (document.PageCount() == 1) {
+                const PdfPage pdfPage = document.GetPage(0);
+                const auto size = pdfPage.Size();
+                // Windows reports PDF page dimensions in 1/96-inch units (384 DIPs = 4 inches).
+                if (qAbs(size.Width - 384.0f) <= 0.1f && qAbs(size.Height - 384.0f) <= 0.1f) {
+                    PdfPageRenderOptions options;
+                    options.DestinationWidth(1536);
+                    options.DestinationHeight(1536);
+                    InMemoryRandomAccessStream imageStream;
+                    pdfPage.RenderToStreamAsync(imageStream, options).get();
+                    imageStream.Seek(0);
+
+                    DataReader imageReader(imageStream.GetInputStreamAt(0));
+                    imageReader.LoadAsync(static_cast<uint32_t>(imageStream.Size())).get();
+                    std::vector<uint8_t> imageBytes(imageReader.UnconsumedBufferLength());
+                    imageReader.ReadBytes(winrt::array_view<uint8_t>(
+                        imageBytes.data(), imageBytes.data() + imageBytes.size()));
+                    page = QImage::fromData(imageBytes.data(), static_cast<int>(imageBytes.size()), "PNG");
+                }
+            }
+        } catch (...) {
+            renderFailure = std::current_exception();
+        }
+        if (apartmentInitialized)
+            winrt::uninit_apartment();
+    });
+    renderer.join();
+    if (renderFailure)
+        return {};
+#endif
     if (page.isNull())
         return {};
 

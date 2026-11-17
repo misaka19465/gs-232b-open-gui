@@ -1,0 +1,297 @@
+name: macOS ARM64
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: '发布当前 CMake 版本的 macOS ARM64 Release（包含 changelog）'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.publish_release && 'release' || 'ci' }}
+  cancel-in-progress: ${{ !inputs.publish_release }}
+
+jobs:
+  build:
+    name: macOS ARM64 Release
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      BUILD_DIR: build/macos-arm64
+      QT_VERSION: '6.8.3'
+      QT_ARCH: clang_64
+      QT_INSTALL_DIR: ${{ github.workspace }}/.ci-cache/Qt
+      UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+      CCACHE_VERSION: '4.14.3'
+      CCACHE_DIR: ${{ github.workspace }}/build/macos-arm64/ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Verify ARM64 runner and Apple toolchain
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+          clang++ --version | head -n 1
+
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Restore local Python environment and uv downloads
+        id: venv_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            .venv
+            ${{ env.UV_CACHE_DIR }}
+          key: gs232b-macos-venv-v1-${{ runner.os }}-arm64-${{ steps.python.outputs.python-version }}-${{ hashFiles('.github/requirements-macos-ci.txt') }}
+
+      - name: Set up uv on environment cache miss
+        if: steps.venv_cache.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.8'
+          enable-cache: false
+
+      - name: Create .venv and install locked tools with uv pip
+        if: steps.venv_cache.outputs.cache-hit != 'true'
+        env:
+          BASE_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          uv venv --python "$BASE_PYTHON" .venv
+          uv pip sync --python .venv/bin/python .github/requirements-macos-ci.txt
+
+      - name: Activate cached .venv
+        run: |
+          set -euo pipefail
+          venv="$GITHUB_WORKSPACE/.venv"
+          "$venv/bin/python" -c 'import aqt, py7zr, sys; print(sys.executable)'
+          echo "VIRTUAL_ENV=$venv" >> "$GITHUB_ENV"
+          echo "$venv/bin" >> "$GITHUB_PATH"
+
+      - name: Save .venv only on cache miss
+        if: steps.venv_cache.outputs.cache-hit != 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            .venv
+            ${{ env.UV_CACHE_DIR }}
+          key: ${{ steps.venv_cache.outputs.cache-primary-key }}
+
+      - name: Restore Qt SDK
+        id: qt_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.QT_INSTALL_DIR }}
+          key: gs232b-macos-qt-v1-${{ runner.os }}-arm64-${{ env.QT_ARCH }}-${{ env.QT_VERSION }}
+
+      - name: Install Qt with .venv aqt only on SDK cache miss
+        if: steps.qt_cache.outputs.cache-hit != 'true'
+        run: >-
+          python -m aqt install-qt mac desktop "$QT_VERSION" "$QT_ARCH"
+          --outputdir "$QT_INSTALL_DIR" --archives qtbase qttools qttranslations
+          --modules qtserialport qtwebsockets qtpdf
+
+      - name: Enable and validate Qt SDK
+        run: |
+          set -euo pipefail
+          qt_root="$QT_INSTALL_DIR/$QT_VERSION/macos"
+          for required in \
+            "$qt_root/lib/cmake/Qt6/Qt6Config.cmake" \
+            "$qt_root/lib/QtCore.framework/Versions/A/QtCore" \
+            "$qt_root/bin/macdeployqt" \
+            "$qt_root/translations/qtbase_zh_CN.qm" \
+            "$qt_root/plugins/platforms/libqcocoa.dylib"; do
+            test -f "$required" || { echo "Missing Qt SDK file: $required" >&2; exit 1; }
+          done
+          echo "QT_ROOT_DIR=$qt_root" >> "$GITHUB_ENV"
+
+      - name: Save Qt SDK only on cache miss
+        if: steps.qt_cache.outputs.cache-hit != 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.QT_INSTALL_DIR }}
+          key: ${{ steps.qt_cache.outputs.cache-primary-key }}
+
+      - name: Compute build cache key
+        id: build_key
+        env:
+          SOURCE_HASH: ${{ hashFiles('**/*.cpp', '**/*.h', '**/*.mm', 'CMakeLists.txt', 'cmake/**', 'translations/**', 'targeting/data/**', 'assets/**', 'resources/**', 'scripts/deploy-macos.sh', '.github/requirements-macos-ci.txt', '.github/workflows/macos-arm64.yml') }}
+          DEPENDENCY_HASH: ${{ hashFiles('cmake/TerminalDependencies.cmake') }}
+        run: |
+          set -euo pipefail
+          toolchain="$(xcodebuild -version | tr '\n' ' ')|$(xcrun --sdk macosx --show-sdk-version)|$(clang++ --version | head -n 1)|$(cmake --version | head -n 1)|$(ninja --version)|$QT_VERSION|$QT_ROOT_DIR|$GITHUB_WORKSPACE|arm64|macos-12.0|ccache-$CCACHE_VERSION"
+          toolchain_hash="$(printf '%s' "$toolchain" | shasum -a 256 | cut -c1-16)"
+          prefix="gs232b-macos-build-v1-macos-arm64-${toolchain_hash}-${DEPENDENCY_HASH}-"
+          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+          echo "key=${prefix}${SOURCE_HASH}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore compiled libraries and build outputs
+        id: build_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: build/macos-arm64
+          key: ${{ steps.build_key.outputs.key }}
+          restore-keys: ${{ steps.build_key.outputs.prefix }}
+
+      - name: Set up cached ccache for Apple Clang
+        id: ccache
+        run: |
+          set -euo pipefail
+          tools="$BUILD_DIR/ccache-tools"
+          directory="$tools/ccache-$CCACHE_VERSION-darwin"
+          executable="$directory/ccache"
+          if [[ ! -x "$executable" ]]; then
+            mkdir -p "$tools"
+            archive="$tools/ccache-$CCACHE_VERSION-darwin.tar.gz"
+            curl --fail --location --retry 3 \
+              "https://github.com/ccache/ccache/releases/download/v$CCACHE_VERSION/ccache-$CCACHE_VERSION-darwin.tar.gz" \
+              --output "$archive"
+            echo '764dd2a8100ff83e6bbd7b9a1e2016cc401be34bee8a70ea99698186622c34d5  '"$archive" | shasum -a 256 --check
+            tar -xzf "$archive" -C "$tools"
+          fi
+          "$executable" --version
+          "$executable" --show-config
+          "$executable" --zero-stats
+          echo "$directory" >> "$GITHUB_PATH"
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+
+      - name: Fingerprint restored intermediates and outputs
+        id: restored_build
+        env:
+          MATCHED_KEY: ${{ steps.build_cache.outputs.cache-matched-key }}
+          SOURCE_KEY: ${{ steps.build_key.outputs.key }}
+        run: |
+          set -euo pipefail
+          fingerprint="$(python -X utf8 -B scripts/ci-build-cache.py "$BUILD_DIR")"
+          echo "hash=$fingerprint" >> "$GITHUB_OUTPUT"
+          reuse=false
+          if [[ "$MATCHED_KEY" == "$SOURCE_KEY"-* && -x "$BUILD_DIR/gs_232b_open_gui.app/Contents/MacOS/gs_232b_open_gui" ]]; then
+            reuse=true
+          fi
+          echo "reuse=$reuse" >> "$GITHUB_OUTPUT"
+
+      - name: Configure
+        if: steps.restored_build.outputs.reuse != 'true'
+        run: |
+          set -euo pipefail
+          disconnected=OFF
+          if [[ -f "$BUILD_DIR/_deps/anytermqt-src/qtpyte/CMakeLists.txt" && -f "$BUILD_DIR/_deps/utf8proc-src/CMakeLists.txt" ]]; then
+            disconnected=ON
+          fi
+          cmake -S . -B "$BUILD_DIR" -G Ninja \
+            "-DCMAKE_PREFIX_PATH=$QT_ROOT_DIR" \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            "-DFETCHCONTENT_FULLY_DISCONNECTED=$disconnected" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF
+
+      - name: Build
+        if: steps.restored_build.outputs.reuse != 'true'
+        run: cmake --build "$BUILD_DIR" --target gs_232b_open_gui --parallel 2
+
+      - name: Reuse matching compiled application
+        if: steps.restored_build.outputs.reuse == 'true'
+        run: test -x "$BUILD_DIR/gs_232b_open_gui.app/Contents/MacOS/gs_232b_open_gui"
+
+      - name: Show ccache hits and misses
+        if: always() && steps.ccache.outputs.ready == 'true'
+        run: ccache --show-stats --verbose
+
+      - name: Package and verify ARM64 app
+        run: ./scripts/deploy-macos.sh
+
+      - name: Fingerprint current intermediates and outputs
+        id: compiled_build
+        run: |
+          set -euo pipefail
+          fingerprint="$(python -X utf8 -B scripts/ci-build-cache.py "$BUILD_DIR")"
+          echo "hash=$fingerprint" >> "$GITHUB_OUTPUT"
+
+      - name: Save build cache when compiled files change
+        if: steps.restored_build.outputs.hash != steps.compiled_build.outputs.hash && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: build/macos-arm64
+          key: ${{ steps.build_key.outputs.key }}-${{ steps.compiled_build.outputs.hash }}
+
+      - name: Upload macOS ARM64 ZIP
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gs-232b-open-gui-macos-arm64
+          path: build/macos-arm64/gs-232b-open-gui-macos-arm64.zip
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  release:
+    name: Publish current version
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the built commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download the verified macOS ARM64 ZIP
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: gs-232b-open-gui-macos-arm64
+          path: build/artifact
+
+      - name: Publish versioned ZIP, checksum and changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 -X utf8 scripts/ci-release.py
+          --archive build/artifact/gs-232b-open-gui-macos-arm64.zip
+          --output-dir build/release --asset-suffix macos-arm64
+          --publish --allow-existing-release-assets
+          --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA"
+
+  cleanup:
+    name: Keep the latest two cache generations
+    needs: build
+    if: always() && needs.build.result == 'success' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Remove third and older caches in each managed family
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/cleanup-ci-cache.py --repository "$GITHUB_REPOSITORY" --keep 2

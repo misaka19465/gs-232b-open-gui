@@ -1,4 +1,5 @@
 #include "Compass.h"
+#include "QtCompat.h"
 #include "GreatCircleMap.h"
 
 #include <QMouseEvent>
@@ -129,7 +130,7 @@ void Compass::mousePressEvent(QMouseEvent *event)
     if (m_mapEnabled && m_map->image().isNull())
         return;
 
-    const QPointF offset = event->position() - QPointF(width() / 2.0, height() / 2.0);
+    const QPointF offset = mouseEventPosition(event) - QPointF(width() / 2.0, height() / 2.0);
     if (qSqrt(offset.x() * offset.x() + offset.y() * offset.y()) > radius()) {
         QWidget::mousePressEvent(event);
         return;

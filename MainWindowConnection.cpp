@@ -89,4 +89,3 @@ void MainWindow::closeTransport()
     m_connection->setConnecting(false);
     m_connection->setConnected(false);
 }
-

@@ -9,6 +9,10 @@ Makefile
 compile_commands.json
 Testing/
 
+# Local Python tooling environment
+/.venv/
+/.uv-cache/
+
 # Qt generated files
 *_autogen/
 *.qm

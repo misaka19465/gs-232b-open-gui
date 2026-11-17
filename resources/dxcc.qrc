@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/dxcc">
+        <file alias="cty.dat">../targeting/data/cty.dat</file>
+        <file alias="COPYING">../targeting/data/COPYING</file>
+    </qresource>
+</RCC>

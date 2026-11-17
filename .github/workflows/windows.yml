@@ -1,0 +1,347 @@
+name: Windows
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: '发布当前 CMake 版本的 Release（包含 changelog）'
+        type: boolean
+        required: false
+        default: false
+  schedule:
+    - cron: '17 3 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.publish_release && 'release' || 'ci' }}
+  cancel-in-progress: ${{ !inputs.publish_release }}
+
+jobs:
+  build:
+    name: Windows x64 Release
+    if: github.event_name != 'schedule'
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      BUILD_DIR: build/windows-msvc-x86_64
+      QT_VERSION: '5.15.2'
+      UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+      CCACHE_VERSION: '4.14.3'
+      CCACHE_DIR: ${{ github.workspace }}/build/windows-msvc-x86_64/ccache
+      CCACHE_CONFIGPATH: ${{ github.workspace }}/cmake/ccache-msvc.conf
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      VSLANG: '1033'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        id: python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: x64
+          vsversion: '2022'
+          toolset: '14.29'
+
+      - name: Restore local Python environment and uv downloads
+        id: venv_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            .venv
+            ${{ env.UV_CACHE_DIR }}
+          key: gs232b-windows-venv-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.python.outputs.python-version }}-${{ hashFiles('.github/requirements-ci.txt') }}
+
+      - name: Set up uv on environment cache miss
+        if: steps.venv_cache.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.8'
+          enable-cache: false
+
+      - name: Create .venv and install locked tools with uv pip
+        if: steps.venv_cache.outputs.cache-hit != 'true'
+        env:
+          BASE_PYTHON: ${{ steps.python.outputs.python-path }}
+        run: |
+          uv venv --python "$env:BASE_PYTHON" .venv
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to create .venv' }
+          uv pip sync --python .venv/Scripts/python.exe .github/requirements-ci.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to install locked CI tools' }
+
+      - name: Activate cached .venv
+        run: |
+          $venv = Join-Path $env:GITHUB_WORKSPACE '.venv'
+          & (Join-Path $venv 'Scripts/python.exe') -c 'import aqt, py7zr, sys; print(sys.executable)'
+          if ($LASTEXITCODE -ne 0) { throw 'Cached .venv is unusable; remove its cache and rerun.' }
+          "VIRTUAL_ENV=$venv" >> $env:GITHUB_ENV
+          (Join-Path $venv 'Scripts') >> $env:GITHUB_PATH
+
+      - name: Save .venv only on cache miss
+        if: steps.venv_cache.outputs.cache-hit != 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: |
+            .venv
+            ${{ env.UV_CACHE_DIR }}
+          key: ${{ steps.venv_cache.outputs.cache-primary-key }}
+
+      - name: Locate Qt SDK and preserve its existing cache key
+        id: qt_paths
+        run: |
+          $installDir = Join-Path $env:RUNNER_WORKSPACE 'Qt'
+          $qtRoot = Join-Path $installDir "$env:QT_VERSION/msvc2019_64"
+          $windowsRelease = node -p 'require("os").release()'
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot identify the Windows runner version' }
+          $key = "gs232b-windows-qt-windows-$windowsRelease-desktop-win64_msvc2019_64-$env:QT_VERSION-$installDir-==1.1.0-==3.3.0-qtserialport-qtwebsockets-qtbase-qttools-qttranslations"
+          "install_dir=$installDir" >> $env:GITHUB_OUTPUT
+          "key=$key" >> $env:GITHUB_OUTPUT
+          "QT_INSTALL_DIR=$installDir" >> $env:GITHUB_ENV
+          "QT_ROOT_DIR=$qtRoot" >> $env:GITHUB_ENV
+
+      - name: Restore Qt SDK
+        id: qt_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ steps.qt_paths.outputs.install_dir }}
+          key: ${{ steps.qt_paths.outputs.key }}
+
+      - name: Install Qt with .venv aqt only on SDK cache miss
+        if: steps.qt_cache.outputs.cache-hit != 'true'
+        run: >-
+          python -m aqt install-qt windows desktop "$env:QT_VERSION" win64_msvc2019_64
+          --outputdir "$env:QT_INSTALL_DIR" --archives qtbase qttools qttranslations
+          --modules qtserialport qtwebsockets
+
+      - name: Enable Qt SDK
+        run: |
+          if (-not (Test-Path "$env:QT_ROOT_DIR/bin/Qt5Core.dll" -PathType Leaf)) {
+            throw 'Qt SDK cache is incomplete; remove its cache and rerun.'
+          }
+          (Join-Path $env:QT_ROOT_DIR 'bin') >> $env:GITHUB_PATH
+          "QT_PLUGIN_PATH=$(Join-Path $env:QT_ROOT_DIR 'plugins')" >> $env:GITHUB_ENV
+
+      - name: Save Qt SDK only on cache miss
+        if: steps.qt_cache.outputs.cache-hit != 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ steps.qt_paths.outputs.install_dir }}
+          key: ${{ steps.qt_cache.outputs.cache-primary-key }}
+
+      - name: Check CI and runtime verification tests
+        run: python -X utf8 -B -W error::ResourceWarning -m unittest discover -s tests/pytest -p 'test_*.py'
+
+      - name: Compute build cache key
+        id: build_key
+        env:
+          SOURCE_HASH: ${{ hashFiles('**/*.cpp', '**/*.h', '**/*.qrc', 'CMakeLists.txt', 'cmake/**', 'translations/**', 'targeting/data/**', 'assets/**', '.github/workflows/windows.yml', '!.venv/**', '!.uv-cache/**') }}
+          DEPENDENCY_HASH: ${{ hashFiles('cmake/TerminalDependencies.cmake') }}
+        run: |
+          $cmakeVersion = (cmake --version | Select-Object -First 1)
+          $ninjaVersion = (ninja --version)
+          $identity = "$env:VCToolsVersion|$env:WindowsSDKVersion|$env:QT_VERSION|$env:QT_ROOT_DIR|$cmakeVersion|$ninjaVersion|$((Get-Location).Path)|ccache-$env:CCACHE_VERSION|Embedded"
+          $toolchainHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($identity))).Substring(0, 16).ToLowerInvariant()
+          $prefix = "gs232b-windows-build-v1-${{ runner.os }}-${{ runner.arch }}-$toolchainHash-$env:DEPENDENCY_HASH-"
+          "prefix=$prefix" >> $env:GITHUB_OUTPUT
+          "key=$prefix$env:SOURCE_HASH" >> $env:GITHUB_OUTPUT
+
+      - name: Restore compiled libraries and build outputs
+        id: build_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: build/windows-msvc-x86_64
+          key: ${{ steps.build_key.outputs.key }}
+          restore-keys: ${{ steps.build_key.outputs.prefix }}
+
+      - name: Set up cached ccache for MSVC
+        id: ccache
+        run: |
+          $tools = Join-Path $env:BUILD_DIR 'ccache-tools'
+          $name = "ccache-$env:CCACHE_VERSION-windows-x86_64"
+          $directory = Join-Path $tools $name
+          $executable = Join-Path $directory 'ccache.exe'
+          if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+            New-Item -ItemType Directory -Path $tools -Force | Out-Null
+            $archive = Join-Path $tools "$name.zip"
+            Invoke-WebRequest -Uri "https://github.com/ccache/ccache/releases/download/v$env:CCACHE_VERSION/$name.zip" -OutFile $archive
+            $expected = 'c845c3d65be81954c75659145a522a793a27586bf940c5dcfe18af33fa1a67dd'
+            if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+              throw 'ccache archive checksum mismatch'
+            }
+            Expand-Archive -LiteralPath $archive -DestinationPath $tools -Force
+          }
+          & $executable --version
+          if ($LASTEXITCODE -ne 0) { throw 'Cached ccache cannot run' }
+          & $executable --show-config
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid MSVC ccache configuration' }
+          & $executable --zero-stats
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot reset ccache statistics' }
+          (Resolve-Path -LiteralPath $directory).Path >> $env:GITHUB_PATH
+          'ready=true' >> $env:GITHUB_OUTPUT
+
+      - name: Fingerprint restored intermediates and outputs
+        id: restored_build
+        env:
+          MATCHED_KEY: ${{ steps.build_cache.outputs.cache-matched-key }}
+          SOURCE_KEY: ${{ steps.build_key.outputs.key }}
+        run: |
+          $fingerprint = python -X utf8 -B scripts/ci-build-cache.py "$env:BUILD_DIR"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot fingerprint restored build files' }
+          "hash=$fingerprint" >> $env:GITHUB_OUTPUT
+          $reuse = ([string]$env:MATCHED_KEY).StartsWith("${env:SOURCE_KEY}-") -and (Test-Path "$env:BUILD_DIR/gs_232b_open_gui.exe" -PathType Leaf)
+          "reuse=$($reuse.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Configure
+        if: steps.restored_build.outputs.reuse != 'true'
+        run: |
+          $disconnected = if ((Test-Path "$env:BUILD_DIR/_deps/anytermqt-src/qtpyte/CMakeLists.txt") -and
+                              (Test-Path "$env:BUILD_DIR/_deps/utf8proc-src/CMakeLists.txt")) { 'ON' } else { 'OFF' }
+          cmake -S . -B "$env:BUILD_DIR" -G Ninja `
+            "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR" `
+            "-DFETCHCONTENT_FULLY_DISCONNECTED=$disconnected" `
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache `
+            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_WIN32_EXECUTABLE=ON `
+            -DBUILD_TESTING=OFF
+
+      - name: Build
+        if: steps.restored_build.outputs.reuse != 'true'
+        run: cmake --build "$env:BUILD_DIR" --target gs_232b_open_gui --parallel 4
+
+      - name: Reuse matching compiled application
+        if: steps.restored_build.outputs.reuse == 'true'
+        run: |
+          if (-not (Test-Path "$env:BUILD_DIR/gs_232b_open_gui.exe" -PathType Leaf)) {
+            throw 'Build cache is incomplete; remove this cache and rerun.'
+          }
+          Write-Host 'Source and toolchain match: reusing cached libraries and EXE.'
+
+      - name: Show ccache hits and misses
+        if: always() && steps.ccache.outputs.ready == 'true'
+        run: ccache --show-stats --verbose
+
+      - name: Restore PE inspection tools
+        id: pe_cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ runner.temp }}/gs232b-pe-tools
+          key: gs232b-windows-pe-tools-v1-${{ runner.os }}-${{ runner.arch }}
+
+      # Add binutils only after compilation so it cannot select a MinGW toolchain.
+      - name: Install PE inspection tool
+        if: steps.pe_cache.outputs.cache-hit != 'true'
+        run: |
+          & C:\msys64\usr\bin\bash.exe -lc 'pacman -Sy --needed --noconfirm mingw-w64-x86_64-binutils'
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to install objdump' }
+          $tools = Join-Path $env:RUNNER_TEMP 'gs232b-pe-tools'
+          New-Item -ItemType Directory -Path $tools -Force | Out-Null
+          Copy-Item -LiteralPath 'C:\msys64\mingw64\bin\objdump.exe' -Destination $tools
+          Get-ChildItem -LiteralPath 'C:\msys64\mingw64\bin' -Filter '*.dll' -File | Copy-Item -Destination $tools
+
+      - name: Enable PE inspection tools
+        run: |
+          $tools = Join-Path $env:RUNNER_TEMP 'gs232b-pe-tools'
+          & (Join-Path $tools 'objdump.exe') --version
+          if ($LASTEXITCODE -ne 0) { throw 'Cached objdump cannot run' }
+          $tools >> $env:GITHUB_PATH
+
+      - name: Package and verify
+        run: ./scripts/deploy-windows.ps1 -QtPrefix "$env:QT_ROOT_DIR" -BuildDir "$env:BUILD_DIR"
+
+      - name: Fingerprint current intermediates and outputs
+        id: compiled_build
+        run: |
+          $fingerprint = python -X utf8 -B scripts/ci-build-cache.py "$env:BUILD_DIR"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot fingerprint compiled build files' }
+          "hash=$fingerprint" >> $env:GITHUB_OUTPUT
+
+      - name: Save build cache when compiled files change
+        if: steps.restored_build.outputs.hash != steps.compiled_build.outputs.hash && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: build/windows-msvc-x86_64
+          key: ${{ steps.build_key.outputs.key }}-${{ steps.compiled_build.outputs.hash }}
+
+      - name: Save PE tools on cache miss
+        if: steps.pe_cache.outputs.cache-hit != 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ runner.temp }}/gs232b-pe-tools
+          key: ${{ steps.pe_cache.outputs.cache-primary-key }}
+
+      - name: Upload Windows ZIP
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gs-232b-open-gui-windows-x86_64
+          path: build/windows-msvc-x86_64/gs-232b-open-gui-windows-x86_64.zip
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  release:
+    name: Publish current version
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the built commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download the verified Windows ZIP
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: gs-232b-open-gui-windows-x86_64
+          path: build/artifact
+
+      - name: Publish versioned ZIP, checksum and changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 -X utf8 scripts/ci-release.py
+          --archive build/artifact/gs-232b-open-gui-windows-x86_64.zip
+          --output-dir build/release
+          --asset-suffix windows-x86_64 --publish --allow-existing-release-assets
+          --repository "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA"
+
+  cleanup:
+    name: Keep the latest two cache generations
+    needs: build
+    if: >-
+      always() && (github.event_name == 'schedule' ||
+      (needs.build.result == 'success' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Remove third and older caches in each managed family
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/cleanup-ci-cache.py --repository "$GITHUB_REPOSITORY" --keep 2

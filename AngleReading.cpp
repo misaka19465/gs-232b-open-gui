@@ -1,4 +1,5 @@
 #include "AngleReading.h"
+#include "QtCompat.h"
 #include "AzimuthScale.h"
 
 #include <QApplication>
@@ -113,7 +114,7 @@ bool AngleReading::eventFilter(QObject *watched, QEvent *event)
 void AngleReading::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && m_editingEnabled &&
-        rect().contains(event->position().toPoint())) {
+        rect().contains(mouseEventPosition(event).toPoint())) {
         beginEditing();
         event->accept();
         return;
