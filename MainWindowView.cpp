@@ -4,6 +4,7 @@
 #include "ControlPanel.h"
 
 #include <QAction>
+#include <QLayout>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -19,7 +20,14 @@ void MainWindow::createViewMenu()
     m_console->setVisible(consoleAction->isChecked());
     // NOTE: 恢复状态后再连接保存，启动读取不覆盖缺失或无效的配置值。
     connect(consoleAction, &QAction::toggled, this, [this](bool visible) {
+        const int consoleHeight = m_console->height() + centralWidget()->layout()->spacing();
+        const int targetHeight = height() + (visible ? consoleHeight : -consoleHeight);
         m_console->setVisible(visible);
+        // NOTE: 先更新布局的最小高度，再同步增减窗口高度，保留主控制区尺寸。
+        centralWidget()->layout()->activate();
+        layout()->activate();
+        if (!isMaximized() && !isFullScreen())
+            resize(width(), targetHeight);
         if (!AppSettings().setConsoleVisible(visible))
             QMessageBox::warning(this, tr("Application settings"),
                                  tr("Could not save application settings."));

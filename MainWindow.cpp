@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_control = new ControlPanel(central);
     layout->addWidget(m_control, 1);
     m_console = new ConsolePanel(central);
-    // NOTE: 控制台保持固定高度；显隐或缩放窗口只改变主控制区的可用空间。
+    // NOTE: 控制台保持固定高度；显隐时由视图菜单同步调整窗口高度。
     m_console->setFixedHeight(220);
     layout->addWidget(m_console);
     m_faultStatus = new FaultStatusMonitor(this);
