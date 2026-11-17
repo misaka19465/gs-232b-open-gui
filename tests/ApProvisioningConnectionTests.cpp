@@ -1,5 +1,5 @@
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "MainWindow.h"
 #include "ManagementKeyDialog.h"
 #include "WifiProvisioningDialog.h"
@@ -52,7 +52,7 @@ private:
 
     QTemporaryDir m_settingsDirectory;
     MainWindow *m_window = nullptr;
-    ConnectionPanel *m_connection = nullptr;
+    ConnectionDialog *m_connection = nullptr;
     Communication::Transport *m_transport = nullptr;
     QAction *m_start = nullptr;
     QWebSocketServer *m_server = nullptr;
@@ -79,7 +79,7 @@ void ApProvisioningConnectionTests::init()
     });
 
     m_window = new MainWindow;
-    m_connection = m_window->findChild<ConnectionPanel *>();
+    m_connection = m_window->findChild<ConnectionDialog *>();
     m_transport = m_window->findChild<Communication::Transport *>();
     m_start = m_window->findChild<QAction *>(QStringLiteral("startApProvisioningAction"));
     QVERIFY(m_connection);

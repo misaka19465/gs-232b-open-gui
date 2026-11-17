@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "NetworkAddresses.h"
 
 #include <QAbstractButton>

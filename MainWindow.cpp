@@ -4,7 +4,7 @@
 #include "CalibrationDialog.h"
 #include "CommandLog.h"
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "ConsolePanel.h"
 #include "ControlPanel.h"
 #include "FaultStatusMonitor.h"
@@ -62,8 +62,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     auto *layout = new QVBoxLayout(central);
     layout->setContentsMargins(10, 8, 10, 8);
     layout->setSpacing(10);
-    m_connection = new ConnectionPanel(central);
-    layout->addWidget(m_connection);
+    m_connection = new ConnectionDialog(this);
     m_control = new ControlPanel(central);
     layout->addWidget(m_control, 1);
     m_console = new ConsolePanel(central);
@@ -102,12 +101,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     createMenus();
     connect(m_control, &ControlPanel::trackingEnabledChanged, this, &MainWindow::updateBridgeState);
     setupVirtualSerial();
-    connect(m_connection, &ConnectionPanel::stateChanged,
+    connect(m_connection, &ConnectionDialog::stateChanged,
             this, &MainWindow::updateConnectionState);
-    connect(m_connection, &ConnectionPanel::connectRequested,
+    connect(m_connection, &ConnectionDialog::connectRequested,
             this, &MainWindow::openTransport);
-    connect(m_connection, &ConnectionPanel::disconnectRequested,
+    connect(m_connection, &ConnectionDialog::disconnectRequested,
             this, &MainWindow::closeTransport);
+    connect(m_connection, &QDialog::rejected, this, [this] {
+        if (!m_connection->isConnecting())
+            return;
+        // NOTE: 用户取消握手时主动关闭传输，本次断开不重新弹出刚取消的窗口。
+        m_connectionPromptSuppressed = true;
+        closeTransport();
+        m_connectionPromptSuppressed = false;
+    });
     connect(m_transport, &Communication::Transport::connected, this, [this] {
         if (m_connection->isVirtualComEnabled() &&
             !m_virtualSerial->start(m_connection->virtualSerialOptions())) {
@@ -125,7 +132,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     });
     connect(m_transport, &Communication::Transport::disconnected, this, [this] {
         m_virtualSerial->stop();
-        m_connection->setVirtualSerialPort({});
         m_connection->setConnecting(false);
         m_connection->setConnected(false);
         m_positionPollTimer->stop();
@@ -145,6 +151,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
         m_managementAuthenticated = false;
         m_pendingManagementContinuation = {};
         m_pendingManagementResponseContinuation = {};
+        if (!m_connectionPromptSuppressed)
+            openConnectionDialog();
     });
     connect(m_transport, &Communication::Transport::bytesReceived,
             this, &MainWindow::handleReceivedBytes);
@@ -152,8 +160,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             m_console, &ConsolePanel::appendSent);
     connect(m_transport, &Communication::Transport::errorOccurred, this,
             [this](const QString &error) {
-                m_console->appendError(tr("Transport error: %1").arg(error));
+                const QString message = tr("Transport error: %1").arg(error);
+                m_console->appendError(message);
                 m_connection->setConnecting(false);
+                m_connection->setError(message);
             });
     connect(m_console, &ConsolePanel::commandRequested, this,
             [this](const QString &command) {
@@ -209,7 +219,6 @@ void MainWindow::setupVirtualSerial()
 {
     m_virtualSerial = new VirtualSerialBridge(this);
     connect(m_virtualSerial, &VirtualSerialBridge::started, this, [this](const QString &port) {
-        m_connection->setVirtualSerialPort(port);
         m_console->appendNotice(tr("Virtual serial port ready: %1").arg(port));
     });
     connect(m_virtualSerial, &VirtualSerialBridge::webSocketLineReady, this,
@@ -226,7 +235,9 @@ void MainWindow::setupVirtualSerial()
             });
     connect(m_virtualSerial, &VirtualSerialBridge::errorOccurred, this,
             [this](const QString &error) {
-                m_console->appendError(tr("Virtual serial error: %1").arg(error));
+                const QString message = tr("Virtual serial error: %1").arg(error);
+                m_console->appendError(message);
+                m_connection->setError(message);
             });
     connect(m_virtualSerial, &VirtualSerialBridge::stopped, this, &MainWindow::closeTransport);
 }
@@ -235,6 +246,14 @@ void MainWindow::createMenus()
 {
     // NOTE: 菜单固定在窗口内，所有控件和弹窗均沿用系统 Qt Widgets 样式。
     menuBar()->setNativeMenuBar(false);
+    m_connectionAction = menuBar()->addAction(tr("Connect"));
+    m_connectionAction->setObjectName(QStringLiteral("connectionAction"));
+    connect(m_connectionAction, &QAction::triggered, this, [this] {
+        if (m_connection->isConnected())
+            m_connection->disconnectRequested();
+        else
+            openConnectionDialog();
+    });
     auto *files = menuBar()->addMenu(tr("Files"));
     files->addAction(tr("Exit"), qApp, &QCoreApplication::quit);
     auto *view = menuBar()->addMenu(tr("View"));
@@ -345,36 +364,6 @@ void MainWindow::createMenus()
     aboutAction->setObjectName(QStringLiteral("aboutAction"));
 }
 
-void MainWindow::updateConnectionState()
-{
-    updateBridgeState();
-    const bool virtualCom = m_connection->isVirtualComEnabled();
-    const bool commandEnabled = m_connection->isConnected() && !virtualCom;
-    m_console->setCommandEnabled(commandEnabled);
-    m_speedMenu->setEnabled(commandEnabled);
-    updateRotorModelState();
-    updateCalibrationState();
-    m_faultStatus->setEnabled(commandEnabled);
-    const bool managementEnabled = m_connection->isConnected() && !virtualCom;
-    m_authenticateAction->setEnabled(managementEnabled);
-    m_changePasswordAction->setEnabled(managementEnabled);
-    m_cancelManagementAction->setEnabled(managementEnabled);
-    m_getIpAddressesAction->setEnabled(managementEnabled);
-    m_startApProvisioningAction->setEnabled(managementEnabled);
-    m_manualWifiAction->setEnabled(managementEnabled);
-    m_networkPortAction->setEnabled(managementEnabled);
-    m_resetNetworkAction->setEnabled(managementEnabled);
-    m_upgradeAction->setEnabled(!virtualCom);
-    if (commandEnabled)
-        m_positionPollTimer->start();
-    else
-        m_positionPollTimer->stop();
-    m_connectionStatus->setText(m_connection->isConnected() ? tr("Connected") : tr("Disconnected"));
-    m_transportStatus->setText(m_connection->isNetworkMode() ? tr("WebSocket") : tr("Serial"));
-    if (!m_connection->isConnected())
-        setDevicePosition(0, 0);
-}
-
 void MainWindow::setDevicePosition(int azimuth, int elevation)
 {
     // NOTE: 校准保留设备原值，避免越过满量程的反馈被主控件钳位为 450° 或 180°。
@@ -382,28 +371,6 @@ void MainWindow::setDevicePosition(int azimuth, int elevation)
     m_controllerElevation = elevation;
     m_control->setPosition(azimuth, elevation);
     updateCalibrationPosition();
-}
-
-void MainWindow::openTransport()
-{
-    if (m_transport->isOpen())
-        return;
-
-    m_connection->setConnecting(true);
-    // NOTE: 主页面终端固定使用控制端点；管理端点由协议模块保留给后续独立调用方。
-    const auto options = m_connection->connectionOptions(Communication::WebSocketEndpoint::Gs232b);
-    if (!m_transport->open(options))
-        m_connection->setConnecting(false);
-}
-
-void MainWindow::closeTransport()
-{
-    m_control->cancelPendingMotion();
-    m_transport->close();
-    m_virtualSerial->stop();
-    m_connection->setVirtualSerialPort({});
-    m_connection->setConnecting(false);
-    m_connection->setConnected(false);
 }
 
 void MainWindow::authenticateManagement()

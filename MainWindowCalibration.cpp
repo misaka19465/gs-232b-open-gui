@@ -3,7 +3,7 @@
 #include "AzimuthScale.h"
 #include "CalibrationDialog.h"
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "ControlPanel.h"
 #include "FaultStatusMonitor.h"
 #include "n1mm/N1mmController.h"

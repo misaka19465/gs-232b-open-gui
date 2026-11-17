@@ -83,7 +83,7 @@ bool Transport::open(const ConnectionOptions &options)
 
     if (options.kind == TransportKind::Serial) {
         if (options.serialPort.trimmed().isEmpty()) {
-            reportError(QStringLiteral("Serial port is empty"));
+            reportError(tr("Serial port is empty"));
             markDisconnected();
             return false;
         }
@@ -104,7 +104,7 @@ bool Transport::open(const ConnectionOptions &options)
 
     const QUrl url = makeWebSocketUrl(options.address, options.endpoint);
     if (!url.isValid()) {
-        reportError(QStringLiteral("Invalid WebSocket address"));
+        reportError(tr("Invalid WebSocket address"));
         markDisconnected();
         return false;
     }

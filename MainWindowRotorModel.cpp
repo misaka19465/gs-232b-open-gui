@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "ConsolePanel.h"
 #include "ControlPanel.h"
 #include "ManagementKeyDialog.h"

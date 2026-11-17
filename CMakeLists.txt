@@ -109,6 +109,7 @@ set(GUI_SOURCES
     CommunicationProtocol.cpp
     CommunicationProtocol.h
     MainWindow.cpp
+    MainWindowConnection.cpp
     MainWindowCalibration.cpp
     MainWindowNetworkAddresses.cpp
     MainWindowN1mm.cpp
@@ -119,8 +120,8 @@ set(GUI_SOURCES
     NetworkAddresses.h
     n1mm/N1mmNameDialog.cpp
     n1mm/N1mmNameDialog.h
-    ConnectionPanel.cpp
-    ConnectionPanel.h
+    ConnectionDialog.cpp
+    ConnectionDialog.h
     ControlPanel.cpp
     ControlPanelMotion.cpp
     ControlPanel.h

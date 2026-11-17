@@ -1,7 +1,7 @@
 #include "AppSettings.h"
 #include "CommunicationProtocol.h"
 #include "ControlPanel.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "MainWindow.h"
 #include "RotorModelDialog.h"
 #include "ManagementKeyDialog.h"
@@ -76,7 +76,7 @@ private:
 
     QTemporaryDir m_settingsDirectory;
     MainWindow *m_window = nullptr;
-    ConnectionPanel *m_connection = nullptr;
+    ConnectionDialog *m_connection = nullptr;
     RotorModelDialog *m_modelDialog = nullptr;
     Communication::Transport *m_transport = nullptr;
     QWebSocketServer *m_server = nullptr;
@@ -102,7 +102,7 @@ void RotorModelConnectionTests::init()
     });
 
     m_window = new MainWindow;
-    m_connection = m_window->findChild<ConnectionPanel *>();
+    m_connection = m_window->findChild<ConnectionDialog *>();
     m_modelDialog = m_window->findChild<RotorModelDialog *>();
     m_transport = m_window->findChild<Communication::Transport *>();
     QVERIFY(m_connection);
@@ -146,7 +146,7 @@ void RotorModelConnectionTests::submitPassword()
 
 void RotorModelConnectionTests::persistsAndRestoresConnectionPreferences()
 {
-    ConnectionPanel panel;
+    ConnectionDialog panel;
     auto *serial = panel.findChild<QComboBox *>(QStringLiteral("serialPort"));
     const QString selectedPort = serial->itemData(serial->count() - 1).toString();
     if (!selectedPort.isEmpty()) {
@@ -163,7 +163,7 @@ void RotorModelConnectionTests::persistsAndRestoresConnectionPreferences()
     for (bool network : {true, false}) {
         panel.findChild<QRadioButton *>(network ? QStringLiteral("networkMode")
                                                 : QStringLiteral("serialMode"))->setChecked(true);
-        ConnectionPanel restored;
+        ConnectionDialog restored;
         const auto options = restored.connectionOptions();
         QCOMPARE(options.serialPort, selectedPort);
         QCOMPARE(options.baudRate, 2400);
@@ -182,7 +182,7 @@ void RotorModelConnectionTests::restoresOnlyScannedSerialPorts()
     const QString missingPort = QStringLiteral("gs232b-missing-port");
     QVERIFY(AppSettings().setSerialPort(missingPort));
     {
-        ConnectionPanel panel;
+        ConnectionDialog panel;
         auto *serial = panel.findChild<QComboBox *>(QStringLiteral("serialPort"));
         const QString firstPort = serial->itemData(0).toString();
         QCOMPARE(serial->currentIndex(), 0);

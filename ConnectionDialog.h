@@ -3,24 +3,27 @@
 #include "CommunicationProtocol.h"
 #include "virtual_serial/VirtualSerialEndpoint.h"
 
-#include <QGroupBox>
+#include <QDialog>
 
 class QCheckBox;
 class QComboBox;
 class QLineEdit;
+class QLabel;
 class QPushButton;
 class QRadioButton;
 
-/** @brief 串口、WebSocket 和虚拟串口连接选项视图。 */
-class ConnectionPanel final : public QGroupBox
+/** @brief 串口、WebSocket 和虚拟串口连接对话框。 */
+class ConnectionDialog final : public QDialog
 {
     Q_OBJECT
 
 public:
-    /** @brief 创建断开状态的连接面板。 */
-    explicit ConnectionPanel(QWidget *parent = nullptr);
+    /** @brief 创建断开状态的连接对话框；连接成功后自动关闭。 */
+    explicit ConnectionDialog(QWidget *parent = nullptr);
     /** @return 是否已经收到传输后端的连接成功状态。 */
     bool isConnected() const;
+    /** @return 是否正在等待传输后端完成连接。 */
+    bool isConnecting() const;
     /** @return 当前是否选择 WebSocket 传输。 */
     bool isNetworkMode() const;
     /** @return 是否启用 WebSocket 到虚拟串口的透传模式。 */
@@ -30,12 +33,12 @@ public:
         Communication::WebSocketEndpoint endpoint = Communication::WebSocketEndpoint::Gs232b) const;
     /** @return Windows 已配置的虚拟 COM 对；POSIX 使用自动分配的 PTY。 */
     VirtualSerialOptions virtualSerialOptions() const;
-    /** @brief 显示外部客户端应打开的端口；空值清除上一次连接的路径。 */
-    void setVirtualSerialPort(const QString &port);
     /** @brief 由传输后端更新实际连接状态；点击连接按钮不直接改变此状态。 */
     void setConnected(bool connected);
     /** @brief 在异步 WebSocket 握手期间锁定连接表单。 */
     void setConnecting(bool connecting);
+    /** @brief 在表单内显示最近一次连接错误，下次连接时清除。 */
+    void setError(const QString &error);
 
 signals:
     /** @brief 传输模式、透传选项或实际连接状态变更。 */
@@ -56,13 +59,13 @@ private:
     QComboBox *m_baudRate;
     QLineEdit *m_address;
     QCheckBox *m_virtualCom;
-    QWidget *m_virtualPortOptions;
-    QLineEdit *m_virtualPort;
 #ifdef Q_OS_WIN
+    QWidget *m_virtualPortOptions;
     QComboBox *m_virtualApplicationPort;
     QComboBox *m_virtualClientPort;
 #endif
     QPushButton *m_connect;
-    QPushButton *m_disconnect;
+    QLabel *m_status;
+    QString m_error;
     bool m_connecting = false;
 };

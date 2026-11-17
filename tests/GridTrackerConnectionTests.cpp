@@ -2,7 +2,7 @@
 #include "AzimuthOffsetDialog.h"
 #include "CalibrationDialog.h"
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "MainWindow.h"
 #include "gridtracker/GridTrackerController.h"
 #include "gridtracker/GridTrackerProtocol.h"
@@ -60,7 +60,7 @@ private:
 
     QTemporaryDir m_directory;
     MainWindow *m_window = nullptr;
-    ConnectionPanel *m_connection = nullptr;
+    ConnectionDialog *m_connection = nullptr;
     GridTrackerController *m_controller = nullptr;
     QWebSocketServer *m_server = nullptr;
     QPointer<QWebSocket> m_peer;
@@ -92,7 +92,7 @@ void GridTrackerConnectionTests::init()
                 [this](const QString &message) { m_commands.append(message); });
     });
     m_window = new MainWindow;
-    m_connection = m_window->findChild<ConnectionPanel *>();
+    m_connection = m_window->findChild<ConnectionDialog *>();
     m_controller = m_window->findChild<GridTrackerController *>();
     QVERIFY(m_connection && m_controller);
     m_window->findChild<QRadioButton *>(QStringLiteral("networkMode"))->setChecked(true);

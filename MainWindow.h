@@ -10,7 +10,7 @@
 
 class QAction;
 class CalibrationDialog;
-class ConnectionPanel;
+class ConnectionDialog;
 class ConsolePanel;
 class ControlPanel;
 class FaultStatusMonitor;
@@ -19,6 +19,7 @@ class QLabel;
 class ManagementKeyDialog;
 class QMenu;
 class RotorModelDialog;
+class QShowEvent;
 class QTimer;
 class VirtualSerialBridge;
 class N1mmController;
@@ -40,6 +41,8 @@ public:
     ~MainWindow() override;
 
 private:
+    void showEvent(QShowEvent *event) override;
+    void openConnectionDialog();
     void createMenus();
     void createN1mmMenu(QMenu *bridge);
     void createGridTrackerMenu(QMenu *bridge);
@@ -92,7 +95,7 @@ private:
     void handleReceivedBytes(const QByteArray &bytes);
     void handleManagementResponse(const QByteArray &line);
 
-    ConnectionPanel *m_connection;
+    ConnectionDialog *m_connection;
     ControlPanel *m_control;
     ConsolePanel *m_console;
     QMenu *m_speedMenu;
@@ -107,6 +110,7 @@ private:
     N1mmController *m_n1mm;
     GridTrackerController *m_gridTracker;
     QAction *m_n1mmEnableAction;
+    QAction *m_connectionAction;
     QAction *m_authenticateAction;
     QAction *m_changePasswordAction;
     QAction *m_cancelManagementAction;
@@ -131,6 +135,8 @@ private:
     QString m_pendingManagementPassword;
     QString m_pendingManagementResponseCommand;
     bool m_managementAuthenticated = false;
+    bool m_initialConnectionPrompt = true;
+    bool m_connectionPromptSuppressed = false;
     int m_pendingRotorModelId = 0;
     quint64 m_rotorModelRequest = 0;
     bool m_rotorModelWriteSent = false;

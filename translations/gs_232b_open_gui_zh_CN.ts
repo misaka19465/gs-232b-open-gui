@@ -21,7 +21,18 @@
         </message>
     </context>
     <context>
-        <name>ConnectionPanel</name>
+        <name>Communication::Transport</name>
+        <message>
+            <source>Serial port is empty</source>
+            <translation>未选择串口</translation>
+        </message>
+        <message>
+            <source>Invalid WebSocket address</source>
+            <translation>WebSocket 地址无效</translation>
+        </message>
+    </context>
+    <context>
+        <name>ConnectionDialog</name>
         <message>
             <source>Network address</source>
             <translation>网络地址</translation>
@@ -35,32 +46,32 @@
             <translation>无法保存应用设置。</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="12" />
-            <source>CONNECTION</source>
+            <location filename="../ConnectionDialog.cpp" line="12" />
+            <source>Connection</source>
             <translation>连接</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="16" />
+            <location filename="../ConnectionDialog.cpp" line="16" />
             <source>Serial</source>
             <translation>串口</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="30" />
+            <location filename="../ConnectionDialog.cpp" line="30" />
             <source>Baud rate</source>
             <translation>波特率</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="35" />
+            <location filename="../ConnectionDialog.cpp" line="35" />
             <source>Network</source>
             <translation>网络</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="23" />
+            <location filename="../ConnectionDialog.cpp" line="23" />
             <source>No serial ports found</source>
             <translation>未找到串口</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="42" />
+            <location filename="../ConnectionDialog.cpp" line="42" />
             <source>Virtual COM</source>
             <translation>虚拟串口</translation>
         </message>
@@ -81,22 +92,18 @@
             <translation>请选择已创建的虚拟串口对中的两个端口。</translation>
         </message>
         <message>
-            <source>Assigned after connection</source>
-            <translation>连接后分配</translation>
-        </message>
-        <message>
-            <source>Active port</source>
-            <translation>当前端口</translation>
-        </message>
-        <message>
-            <location filename="../ConnectionPanel.cpp" line="50" />
+            <location filename="../ConnectionDialog.cpp" line="50" />
             <source>Connect</source>
             <translation>连接</translation>
         </message>
         <message>
-            <location filename="../ConnectionPanel.cpp" line="52" />
-            <source>Disconnect</source>
-            <translation>断开</translation>
+            <location filename="../ConnectionDialog.cpp" line="52" />
+            <source>Cancel</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <source>Connecting...</source>
+            <translation>正在连接…</translation>
         </message>
     </context>
     <context>
@@ -307,6 +314,22 @@
     </context>
     <context>
         <name>MainWindow</name>
+        <message>
+            <source>Connect</source>
+            <translation>连接</translation>
+        </message>
+        <message>
+            <source>Disconnect</source>
+            <translation>断开</translation>
+        </message>
+        <message>
+            <source>Connecting...</source>
+            <translation>正在连接…</translation>
+        </message>
+        <message>
+            <source>WebSocket (%1)</source>
+            <translation>WebSocket（%1）</translation>
+        </message>
         <message>
             <source>GridTracker...</source>
             <translation>GridTracker…</translation>

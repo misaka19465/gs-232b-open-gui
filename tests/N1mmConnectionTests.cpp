@@ -1,7 +1,7 @@
 #include "AppSettings.h"
 #include "CalibrationDialog.h"
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "MainWindow.h"
 #include "n1mm/N1mmController.h"
 #include "n1mm/N1mmNameDialog.h"
@@ -70,7 +70,7 @@ private:
 
     QTemporaryDir m_directory;
     MainWindow *m_window = nullptr;
-    ConnectionPanel *m_connection = nullptr;
+    ConnectionDialog *m_connection = nullptr;
     N1mmController *m_controller = nullptr;
     QWebSocketServer *m_server = nullptr;
     QPointer<QWebSocket> m_peer;
@@ -112,7 +112,7 @@ void N1mmConnectionTests::init()
                 [this](const QString &message) { m_commands.append(message); });
     });
     m_window = new MainWindow;
-    m_connection = m_window->findChild<ConnectionPanel *>();
+    m_connection = m_window->findChild<ConnectionDialog *>();
     m_controller = m_window->findChild<N1mmController *>();
     QVERIFY(m_connection);
     QVERIFY(m_controller);

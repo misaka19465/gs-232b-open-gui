@@ -1,5 +1,5 @@
 #include "CommunicationProtocol.h"
-#include "ConnectionPanel.h"
+#include "ConnectionDialog.h"
 #include "MainWindow.h"
 
 #include <QComboBox>
@@ -37,7 +37,7 @@ private:
     QTemporaryDir m_directory;
     int m_case = 0;
     MainWindow *m_window = nullptr;
-    ConnectionPanel *m_connection = nullptr;
+    ConnectionDialog *m_connection = nullptr;
 };
 
 void MotionConnectionTests::init()
@@ -46,7 +46,7 @@ void MotionConnectionTests::init()
     QSettings::setPath(QSettings::NativeFormat, QSettings::UserScope,
                        m_directory.filePath(QString::number(++m_case)));
     m_window = new MainWindow;
-    m_connection = m_window->findChild<ConnectionPanel *>();
+    m_connection = m_window->findChild<ConnectionDialog *>();
 }
 
 void MotionConnectionTests::cleanup()
