@@ -9,7 +9,6 @@ class AngleReading;
 class AnglePresets;
 class Compass;
 class MotionButtons;
-class QHBoxLayout;
 class QSlider;
 class QTimer;
 class QWidget;
@@ -22,8 +21,6 @@ class ControlPanel final : public QWidget
 public:
     /** @brief 创建零读数、载入已保存预设且命令控件禁用的面板。 */
     explicit ControlPanel(QWidget *parent = nullptr);
-    /** @brief 将宿主的状态面板放到方位预设与仰角区之间，并接管其 QWidget 所有权。 */
-    void setStatusPanel(QWidget *panel);
     /** @brief 按设备确认的型号显示仰角区；隐藏时取消待提交的仰角操作。 */
     void setElevationSupported(bool supported);
     /** @brief 按实际连接、透传及校准状态统一切换命令控件。 */
@@ -68,7 +65,6 @@ private:
     void updateAzimuthInput();
 
     Compass *m_compass;
-    QHBoxLayout *m_layout;
     QWidget *m_elevationControls;
     MotionButtons *m_azimuthMotion;
     MotionButtons *m_elevationMotion;

@@ -108,7 +108,7 @@ void GreatCircleMap::load(const QString &grid)
     QNetworkRequest request(m_serviceUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader,
                       QStringLiteral("application/x-www-form-urlencoded"));
-    request.setRawHeader("User-Agent", "GS-232B-Open-Control/0.2.1");
+    request.setRawHeader("User-Agent", "GS-232B-Open-Control/0.3.0");
     request.setTransferTimeout(60000);
     m_reply = m_network.post(request, form.query(QUrl::FullyEncoded).toUtf8());
     connect(m_reply, &QNetworkReply::readyRead, this, [this] {

@@ -70,9 +70,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_console->setFixedHeight(220);
     layout->addWidget(m_console);
     m_faultStatus = new FaultStatusMonitor(this);
-    auto *faultPanel = new FaultStatusPanel(m_faultStatus, m_control);
-    faultPanel->setMinimumWidth(140);
-    m_control->setStatusPanel(faultPanel);
     setCentralWidget(central);
 
     m_transport = new Communication::Transport(this);
@@ -91,6 +88,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     statusBar()->setSizeGripEnabled(false);
     statusBar()->addWidget(m_connectionStatus, 1);
     statusBar()->addPermanentWidget(m_transportStatus);
+    statusBar()->addPermanentWidget(new FaultStatusPanel(m_faultStatus, statusBar()));
     connect(m_control, &ControlPanel::mapError, this, [this](const QString &message) {
         statusBar()->showMessage(message, 15000);
     });

@@ -936,8 +936,20 @@ Wireless IP: %2</source>
     <context>
         <name>FaultStatusPanel</name>
         <message>
-            <source>FAULT STATUS</source>
+            <source>Fault status</source>
             <translation>报错状态</translation>
+        </message>
+        <message>
+            <source>Status unavailable</source>
+            <translation>状态不可用</translation>
+        </message>
+        <message>
+            <source>Click to view fault details</source>
+            <translation>点击查看报错详情</translation>
+        </message>
+        <message>
+            <source>Close</source>
+            <translation>关闭</translation>
         </message>
         <message>
             <source>Clear fault</source>

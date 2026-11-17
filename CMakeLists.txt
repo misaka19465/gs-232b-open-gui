@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(gs_232b_open_gui VERSION 0.2.1 LANGUAGES C CXX)
+project(gs_232b_open_gui VERSION 0.3.0 LANGUAGES C CXX)
 
 if(WIN32)
     if(NOT MSVC)

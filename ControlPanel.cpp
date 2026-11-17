@@ -26,9 +26,9 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_compass->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto *controls = new QWidget(this);
     new CompassLayout(m_compass, controls, this);
-    m_layout = new QHBoxLayout(controls);
-    m_layout->setContentsMargins(0, 0, 0, 0);
-    m_layout->setSpacing(10);
+    auto *layout = new QHBoxLayout(controls);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(10);
     connect(m_compass, &Compass::mapError, this, &ControlPanel::mapError);
     connect(m_compass, &Compass::angleRequested, this, [this](int angle) {
         requestAzimuth(m_azimuthScale.mechanicalBearing(angle, m_azimuthValue));
@@ -83,12 +83,12 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_azimuthMotion = new MotionButtons(Qt::Horizontal, azimuthControls);
     m_azimuthMotion->setMaximumHeight(42);
     azimuthColumn->addWidget(m_azimuthMotion);
-    m_layout->addWidget(azimuthControls, 1);
+    layout->addWidget(azimuthControls, 1);
     auto *azimuthPresetGroup = new QGroupBox(tr("Presets"), controls);
     auto *azimuthPresetLayout = new QVBoxLayout(azimuthPresetGroup);
     m_azimuthPresets = new AnglePresets(AppSettings::Axis::Azimuth, azimuthPresetGroup);
     azimuthPresetLayout->addWidget(m_azimuthPresets);
-    m_layout->addWidget(azimuthPresetGroup, 1);
+    layout->addWidget(azimuthPresetGroup, 1);
 
     connect(m_azimuthPresets, &AnglePresets::angleRequested, this, [this](int mechanical) {
         requestAzimuth(m_shortestPathEnabled
@@ -137,7 +137,7 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_elevationPresets = new AnglePresets(AppSettings::Axis::Elevation, elevationPresetGroup);
     elevationPresetLayout->addWidget(m_elevationPresets);
     elevationLayout->addWidget(elevationPresetGroup, 1);
-    m_layout->addWidget(m_elevationControls, 2);
+    layout->addWidget(m_elevationControls, 2);
 
     connect(m_elevationPresets, &AnglePresets::angleRequested, this, &ControlPanel::requestElevation);
 
@@ -155,11 +155,6 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_azimuthPresets->setShortestPathEnabled(m_shortestPathEnabled);
     setAzimuthOffset(preferences.azimuthOffset());
     setCommandEnabled(false);
-}
-
-void ControlPanel::setStatusPanel(QWidget *panel)
-{
-    m_layout->insertWidget(2, panel, 1);
 }
 
 void ControlPanel::setElevationSupported(bool supported)
