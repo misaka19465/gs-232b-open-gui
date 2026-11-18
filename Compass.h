@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QImage>
 #include <QWidget>
 
 class GreatCircleMap;
@@ -28,6 +29,7 @@ signals:
     void mapError(const QString &message);
 
 protected:
+    void changeEvent(QEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
@@ -36,6 +38,7 @@ private:
     void updateMapStatus();
 
     GreatCircleMap *m_map;
+    QImage m_themedMap;
     QString m_stationGrid;
     bool m_mapEnabled = false;
     int m_angle = 0;

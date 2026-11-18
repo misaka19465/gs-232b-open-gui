@@ -121,6 +121,7 @@ set(GUI_SOURCES
     CompassLayout.h
     GreatCircleMap.cpp
     GreatCircleMap.h
+    GreatCircleMapPalette.h
     ConsolePanel.cpp
     ConsolePanel.h
     RotorModelDialog.cpp

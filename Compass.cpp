@@ -1,6 +1,8 @@
 #include "Compass.h"
 #include "GreatCircleMap.h"
+#include "GreatCircleMapPalette.h"
 
+#include <QEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -34,6 +36,7 @@ void Compass::setStationGrid(const QString &grid)
 
 void Compass::updateMapStatus()
 {
+    m_themedMap = {};
     QString description;
     if (m_mapEnabled) {
         if (m_stationGrid.isEmpty()) {
@@ -65,13 +68,20 @@ void Compass::setAngle(int degrees)
 QSize Compass::sizeHint() const { return QSize(154, 154); }
 QSize Compass::minimumSizeHint() const { return QSize(120, 120); }
 
+void Compass::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::PaletteChange)
+        m_themedMap = {};
+    QWidget::changeEvent(event);
+}
+
 void Compass::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     const auto group = isEnabled() ? QPalette::Active : QPalette::Disabled;
     const QColor ink = palette().color(group, QPalette::Text);
-    // NOTE: 朱红指针与海洋底色区分；断开时保留较柔和的红色以便读取当前方位。
+    // NOTE: 用朱红突出实测方位；断开时保留较柔和的红色以便读取当前方位。
     const QColor needle = isEnabled() ? QColor(0xd8, 0x3a, 0x2e) : QColor(0xb8, 0x70, 0x68);
     const QPointF center(width() / 2.0, height() / 2.0);
     const qreal radius = this->radius();
@@ -87,11 +97,13 @@ void Compass::paintEvent(QPaintEvent *)
                              Qt::AlignCenter | Qt::TextWordWrap, message);
             return;
         }
+        if (m_themedMap.isNull())
+            m_themedMap = GreatCircleMapPalette::recolor(m_map->image(), palette());
         painter.setRenderHint(QPainter::SmoothPixmapTransform);
         QPainterPath circle;
         circle.addEllipse(bounds);
         painter.setClipPath(circle);
-        painter.drawImage(bounds, m_map->image());
+        painter.drawImage(bounds, m_themedMap);
     } else {
         painter.setPen(QPen(ink, 1.4));
         painter.drawEllipse(QPointF(), radius, radius);
@@ -107,8 +119,8 @@ void Compass::paintEvent(QPaintEvent *)
     const qreal radians = qDegreesToRadians(qreal(m_angle % 360 - 90));
     const QPointF tip = QPointF(qCos(radians), qSin(radians)) * radius * 0.63;
     if (m_mapEnabled) {
-        // NOTE: 白色描边保证指针在蓝色海洋和白色陆地上均可辨认。
-        painter.setPen(QPen(Qt::white, 4.5, Qt::SolidLine, Qt::RoundCap));
+        painter.setPen(QPen(palette().color(QPalette::Active, QPalette::Base), 4.5,
+                            Qt::SolidLine, Qt::RoundCap));
         painter.drawLine(QPointF(), tip);
     }
     painter.setPen(QPen(needle, 2.5, Qt::SolidLine, Qt::RoundCap));
