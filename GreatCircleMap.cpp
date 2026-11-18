@@ -31,7 +31,7 @@ QImage renderMap(QByteArray &pdf)
     // NOTE: NS6T 的 SQUARE + pstrotator + noheadingfooting 输出一页 4 英寸正方形。
     // NOTE: 地图半径为 103 pt，外侧 5 pt 为刻度圈；显式裁掉刻度，保持地图中心和方位不变。
     if (document.status() != QPdfDocument::Status::Ready || document.pageCount() != 1 ||
-        document.pagePointSize(0) != QSizeF(288, 288))
+        document.pageSize(0) != QSizeF(288, 288))
         return {};
 
     const QImage page = document.render(0, QSize(1536, 1536));

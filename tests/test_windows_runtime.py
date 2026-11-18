@@ -26,13 +26,13 @@ class WindowsRuntimeTests(unittest.TestCase):
             runtime.verify(pathlib.Path(name))
 
     def test_msvc_ucrt_application_and_qt_pass(self):
-        for name in ("app.exe", "Qt6Core.dll", "platforms/qwindows.dll"):
+        for name in ("app.exe", "Qt5Core.dll", "platforms/qwindows.dll"):
             with self.subTest(name=name):
                 self.verify(name, MSVC_UCRT)
 
     def test_original_msvcrt_qt_is_rejected(self):
         with self.assertRaises(ValueError):
-            self.verify("Qt6Core.dll", {"msvcrt.dll", "libstdc++-6.dll"})
+            self.verify("Qt5Core.dll", {"msvcrt.dll", "libstdc++-6.dll"})
 
     def test_ucrt_mingw_application_is_rejected(self):
         with self.assertRaises(ValueError):
@@ -52,9 +52,10 @@ class WindowsRuntimeTests(unittest.TestCase):
             self.verify("libstdc++-6.dll", {"ucrtbase.dll"})
 
     def test_static_or_missing_runtime_is_rejected(self):
-        for imports in ({"kernel32.dll"}, {"ucrtbase.dll"}, {"vcruntime140.dll"}):
-            with self.subTest(imports=imports), self.assertRaises(ValueError):
-                self.verify("app.exe", imports)
+        for name in ("app.exe", "Qt5Core.dll", "Qt5Pdf.dll", "platforms/qwindows.dll"):
+            for imports in ({"kernel32.dll"}, {"ucrtbase.dll"}, {"vcruntime140.dll"}):
+                with self.subTest(name=name, imports=imports), self.assertRaises(ValueError):
+                    self.verify(name, imports)
 
     def test_neutral_helper_is_allowed(self):
         self.verify("helper.dll", {"kernel32.dll"})

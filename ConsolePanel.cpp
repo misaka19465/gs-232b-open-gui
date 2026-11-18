@@ -1,29 +1,41 @@
 #include "ConsolePanel.h"
-#include "CommandLog.h"
-#include "terminal/TerminalWidget.h"
 
+#include <QHBoxLayout>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 ConsolePanel::ConsolePanel(QWidget *parent) : QGroupBox(tr("CONSOLE"), parent)
 {
     setObjectName(QStringLiteral("consolePanel"));
     auto *layout = new QVBoxLayout(this);
-    m_output = new TerminalWidget(this);
+    m_output = new QPlainTextEdit(this);
+    m_output->setObjectName(QStringLiteral("consoleOutput"));
+    m_output->setReadOnly(true);
+    m_output->setLineWrapMode(QPlainTextEdit::NoWrap);
     layout->addWidget(m_output, 1);
-    setFocusProxy(m_output);
-    connect(m_output, &TerminalWidget::commandRequested, this, [this](const QString &command) {
-        const QByteArray bytes = command.toUtf8() + '\r';
-        if (Communication::commandForLog(bytes) == bytes)
-            m_output->rememberCommand(command);
-        emit commandRequested(command);
-    });
+
+    auto *inputRow = new QHBoxLayout;
+    m_input = new QLineEdit(this);
+    m_input->setObjectName(QStringLiteral("commandInput"));
+    m_input->setPlaceholderText(tr("Enter command"));
+    m_send = new QPushButton(tr("Send"), this);
+    m_send->setObjectName(QStringLiteral("sendButton"));
+    inputRow->addWidget(m_input, 1);
+    inputRow->addWidget(m_send);
+    layout->addLayout(inputRow);
+    setCommandEnabled(false);
+    connect(m_send, &QPushButton::clicked, this, &ConsolePanel::requestCommand);
+    connect(m_input, &QLineEdit::returnPressed, this, &ConsolePanel::requestCommand);
 
     // NOTE: 控制台只发出用户输入，收发回显由真实传输信号驱动。
 }
 
 void ConsolePanel::setCommandEnabled(bool enabled)
 {
-    m_output->setCommandEnabled(enabled);
+    m_input->setEnabled(enabled);
+    m_send->setEnabled(enabled);
 }
 
 void ConsolePanel::appendReceived(const QByteArray &bytes)
@@ -38,8 +50,10 @@ void ConsolePanel::appendSent(const QByteArray &bytes)
 
 void ConsolePanel::appendError(const QString &error)
 {
-    m_output->appendOutput((m_lineStart ? QString() : QStringLiteral("\n")) +
-                           QStringLiteral("! ") + error + QStringLiteral("\n"));
+    if (!m_lineStart)
+        m_output->insertPlainText(QStringLiteral("\n"));
+    m_output->insertPlainText(QStringLiteral("! ") + error + QStringLiteral("\n"));
+    m_output->ensureCursorVisible();
     m_lineStart = true;
 }
 
@@ -51,15 +65,29 @@ void ConsolePanel::appendProcessOutput(const QByteArray &bytes)
     QString text = QString::fromLocal8Bit(bytes);
     text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
     text.replace(QChar('\r'), QChar('\n'));
-    m_output->appendOutput((m_lineStart ? QStringLiteral("# ") : QString()) + text);
+    if (m_lineStart)
+        m_output->insertPlainText(QStringLiteral("# "));
+    m_output->insertPlainText(text);
     m_lineStart = text.endsWith(QChar('\n'));
+    m_output->ensureCursorVisible();
 }
 
 void ConsolePanel::appendNotice(const QString &message)
 {
-    m_output->appendOutput((m_lineStart ? QString() : QStringLiteral("\n")) +
-                           QStringLiteral("* ") + message + QStringLiteral("\n"));
+    if (!m_lineStart)
+        m_output->insertPlainText(QStringLiteral("\n"));
+    m_output->insertPlainText(QStringLiteral("* ") + message + QStringLiteral("\n"));
+    m_output->ensureCursorVisible();
     m_lineStart = true;
+}
+
+void ConsolePanel::requestCommand()
+{
+    const QString command = m_input->text();
+    if (command.trimmed().isEmpty())
+        return;
+    m_input->clear();
+    emit commandRequested(command);
 }
 
 void ConsolePanel::appendTraffic(const QByteArray &bytes, bool outgoing)
@@ -73,8 +101,9 @@ void ConsolePanel::appendTraffic(const QByteArray &bytes, bool outgoing)
     text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
     text.replace(QChar('\r'), QChar('\n'));
 
-    const QString prefix = m_lineStart ? (outgoing ? QStringLiteral("> ") : QStringLiteral("< "))
-                                      : QString();
-    m_output->appendOutput(prefix + text);
+    if (m_lineStart)
+        m_output->insertPlainText(outgoing ? QStringLiteral("> ") : QStringLiteral("< "));
+    m_output->insertPlainText(text);
     m_lineStart = text.endsWith(QChar('\n'));
+    m_output->ensureCursorVisible();
 }

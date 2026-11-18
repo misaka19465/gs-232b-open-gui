@@ -68,7 +68,7 @@ FirmwareUpgradeDialog::FirmwareUpgradeDialog(QWidget *parent) : QDialog(parent)
     connect(m_file, &QLineEdit::textChanged, this, [this](const QString &file) {
         m_flash->setEnabled(!file.isEmpty() && !m_port->currentData().toString().isEmpty());
     });
-    connect(m_port, &QComboBox::currentIndexChanged, this, [this] {
+    connect(m_port, qOverload<int>(&QComboBox::currentIndexChanged), this, [this] {
         m_flash->setEnabled(!m_file->text().isEmpty() &&
                             !m_port->currentData().toString().isEmpty());
     });

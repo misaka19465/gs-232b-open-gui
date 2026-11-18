@@ -43,7 +43,7 @@ AzimuthOffsetDialog::AzimuthOffsetDialog(QWidget *parent) : QDialog(parent)
     layout->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(buttons, &QDialogButtonBox::accepted, this, &AzimuthOffsetDialog::saveOffset);
-    connect(m_offset, &QSpinBox::valueChanged, this, &AzimuthOffsetDialog::updateRange);
+    connect(m_offset, qOverload<int>(&QSpinBox::valueChanged), this, &AzimuthOffsetDialog::updateRange);
     updateRange();
 }
 

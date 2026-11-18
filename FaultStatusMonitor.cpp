@@ -51,6 +51,8 @@ FaultStatusMonitor::ClearResult clearResult(const QJsonObject &response)
 
 FaultStatusMonitor::FaultStatusMonitor(QObject *parent) : QObject(parent)
 {
+    // NOTE: Qt 5 需要显式注册信号枚举，确保队列连接和信号观察器能读取清除结果。
+    qRegisterMetaType<ClearResult>("FaultStatusMonitor::ClearResult");
     m_pollTimer.setSingleShot(true);
     m_pollTimer.setInterval(2000);
     m_statusTimeout.setSingleShot(true);

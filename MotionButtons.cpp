@@ -8,7 +8,9 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPolygonF>
 #include <QToolButton>
+#include <QVector>
 #include <QtMath>
 
 namespace {
@@ -37,16 +39,16 @@ QIcon motionIcon(Symbol symbol, const QPalette &palette)
                 constexpr qreal radius = 11;
                 const qreal halfWidth = qSqrt(3.0) * radius / 2;
                 painter.translate(12, 12);
-                painter.drawPolygon(QPolygonF{{0, -radius}, {halfWidth, -radius / 2},
+                painter.drawPolygon(QPolygonF(QVector<QPointF>{{0, -radius}, {halfWidth, -radius / 2},
                                               {halfWidth, radius / 2}, {0, radius},
-                                              {-halfWidth, radius / 2}, {-halfWidth, -radius / 2}});
+                                              {-halfWidth, radius / 2}, {-halfWidth, -radius / 2}}));
             } else if (symbol == Symbol::Up || symbol == Symbol::Down) {
                 if (symbol == Symbol::Down) {
                     painter.translate(24, 24);
                     painter.rotate(180);
                 }
                 painter.drawLine(QPointF(12, 20), QPointF(12, 4));
-                painter.drawPolyline(QPolygonF{{6, 10}, {12, 4}, {18, 10}});
+                painter.drawPolyline(QPolygonF(QVector<QPointF>{{6, 10}, {12, 4}, {18, 10}}));
             } else {
                 if (symbol == Symbol::Clockwise) {
                     painter.translate(24, 0);
@@ -56,7 +58,7 @@ QIcon motionIcon(Symbol symbol, const QPalette &palette)
                 arc.moveTo(20, 17);
                 arc.cubicTo(20, 6, 10, 4, 5, 12);
                 painter.drawPath(arc);
-                painter.drawPolyline(QPolygonF{{5, 5}, {5, 12}, {12, 12}});
+                painter.drawPolyline(QPolygonF(QVector<QPointF>{{5, 5}, {5, 12}, {12, 12}}));
             }
             painter.end();
             icon.addPixmap(pixmap, mode);

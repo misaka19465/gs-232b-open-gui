@@ -2,7 +2,7 @@
 
 `scripts/build-windows.sh` 面向 Linux x86_64 主机，通过 [msvc-wine](https://github.com/mstorsjo/msvc-wine) 在 Wine 中运行微软的 `cl.exe`、链接器和 Windows SDK 工具。CMake、Ninja 和 Qt 主机构建工具在 Linux 上运行。目标系统为 Windows 10（1809 或更新版本）/11 x64。
 
-Windows 程序、静态依赖和 Qt DLL 统一使用 MSVC ABI 与动态 MSVC/UCRT 运行库（Release 使用 `/MD`）。不再使用 MinGW，也不再把 UCRT 编译器的运行库与旧 MSVCRT Qt SDK 混合打包。
+项目使用 Qt 5.15。Windows 打包固定为 Qt 5.15.2 官方 **msvc2019_64** SDK，使用兼容的 MSVC 2022 v143 工具链编译。程序、静态依赖和 Qt DLL 统一使用 MSVC ABI 与动态 MSVC/UCRT 运行库（Release 使用 `/MD`）。
 
 ## 安装依赖
 
@@ -17,8 +17,8 @@ sudo pacman -S --needed cmake ninja python python-pip wine msitools curl tar bin
 首次运行下载：
 
 - 固定版本的 `msvc-wine`（提交 `5dd115047b7ddcbb53cbc8b5b14163a20f4334fe`，校验 SHA-256），以及微软 MSVC 14.44（VS 2022 v143）、Windows SDK 10.0.26100。微软组件由下载器根据官方安装清单校验。
-- `aqtinstall 3.3.0` 和 Qt 6.8.3：Linux QtBase、QtTools、ICU，以及 Windows **msvc2022_64** 的 QtBase、QtTools、QtTranslations、QtSerialPort、QtWebSockets、QtPdf。
-- 固定版本并校验 SHA-256 的 anytermqt 和 utf8proc；这两个依赖使用同一 MSVC 静态编译，无需额外 DLL。
+- `aqtinstall 3.3.0` 和 Qt 5.15.2：Linux QtBase、QtTools、ICU，以及 Windows **msvc2019_64** 的 QtBase、QtTools、QtTranslations、QtSerialPort、QtWebSockets、QtWebEngine（提供 QtPdf 二进制）。
+- Qt 5.15.2 的官方 QtWebEngine 源码归档，校验 SHA-256：该 SDK 缺少 QtPdf 开发头文件和 CMake 配置，构建只提取匹配版本的官方头文件，并链接 SDK 中已有的 Qt5Pdf DLL，无需编译 Chromium。
 
 SDK 下载器使用独立 Python 虚拟环境，默认使用阿里云 Qt 镜像并保留下载校验。首次安装微软工具链时，下载器会要求接受[微软许可](https://go.microsoft.com/fwlink/?LinkId=2086102)。阅读并接受后，可以用 `MSVC_ACCEPT_LICENSE=1` 进行非交互安装；脚本不会默认替用户接受许可。MSVC/SDK 安装目录是本机的构建缓存，不应随应用分发。
 
@@ -37,9 +37,9 @@ MSVC_ACCEPT_LICENSE=1 ./scripts/build-windows.sh
 
 成功后生成：
 
-- `build/windows-msvc-x86_64/package/gs_232b_open_gui.exe`：Windows 程序。
-- `build/windows-msvc-x86_64/package/`：完整程序目录，包含 Qt DLL、配套 MSVC 可再分发 DLL、平台插件、中文 Qt 翻译、许可证和 `qt.conf`。
-- `build/windows-msvc-x86_64/gs-232b-open-gui-windows-x86_64.zip`：可分发 ZIP 包。
+- `build/windows-qt5-msvc-x86_64/package/gs_232b_open_gui.exe`：Windows 程序。
+- `build/windows-qt5-msvc-x86_64/package/`：完整程序目录，包含 Qt DLL、配套 MSVC 可再分发 DLL、平台插件、中文 Qt 翻译、许可证和 `qt.conf`。
+- `build/windows-qt5-msvc-x86_64/gs-232b-open-gui-windows-x86_64.zip`：可分发 ZIP 包。
 
 在 Windows 上解压 ZIP 后运行 `gs_232b_open_gui.exe`，保留完整目录。MSVC CRT 随程序部署，UCRT 由支持的 Windows 系统提供。应用自身的中文翻译嵌入 EXE。Windows 虚拟串口仍需预先安装配对驱动并创建 COM 对。
 
@@ -47,7 +47,7 @@ MSVC_ACCEPT_LICENSE=1 ./scripts/build-windows.sh
 
 ## 缓存与自定义路径
 
-SDK、下载器和独立 Wine 前缀默认缓存在 `${XDG_CACHE_HOME:-$HOME/.cache}/gs232b-windows`。再次运行复用缓存并增量编译。
+应用设置和地图缓存格式保持兼容，无需迁移。SDK、下载器和独立 Wine 前缀默认缓存在 `${XDG_CACHE_HOME:-$HOME/.cache}/gs232b-windows`。再次运行复用缓存并增量编译。
 
 ```sh
 # 改用 Qt 官方下载源。
@@ -58,19 +58,19 @@ WINDOWS_BUILD_CACHE=/path/to/cache BUILD_DIR=/path/to/build ./scripts/build-wind
 
 # 复用已通过 msvc-wine 安装的工具链和同版本 Qt SDK。
 MSVC_ROOT=/path/to/msvc \
-QT_HOST_PATH=/path/to/Qt/6.8.3/gcc_64 \
-QT_WINDOWS_PREFIX=/path/to/Qt/6.8.3/msvc2022_64 \
+QT_HOST_PATH=/path/to/Qt/5.15.2/gcc_64 \
+QT_WINDOWS_PREFIX=/path/to/Qt/5.15.2/msvc2019_64 \
 ./scripts/build-windows.sh
 ```
 
-`MSVC_ROOT` 必须包含 `msvc-wine` 安装生成的 `bin/x64/{cl,link,lib,rc,mt}` 包装器。自备 Windows Qt 必须是 Qt 6.8.3 **msvc2022_64**，且含上述模块。`MSVC_REDIST_DIR` 可显式指定配套的 x64 `Microsoft.VC143.CRT` 目录。
+`MSVC_ROOT` 必须包含 `msvc-wine` 安装生成的 `bin/x64/{cl,link,lib,rc,mt}` 包装器。自备 Windows Qt 必须是 Qt 5.15.2 **msvc2019_64**，且含上述模块。`MSVC_REDIST_DIR` 可显式指定配套的 x64 `Microsoft.VC143.CRT` 目录。
 
-旧的 `build/windows-x86_64` 目录和其中 ZIP 含不兼容的 MinGW/MSVCRT 组合，不能继续分发。新默认目录 `build/windows-msvc-x86_64` 避免复用旧缓存；显式指定含其他工具链缓存的 `BUILD_DIR` 时脚本会拒绝继续。更换工具链或 SDK 时也应使用新目录。
+使用新的默认目录 `build/windows-qt5-msvc-x86_64`，避免复用 Qt 6 的 `build/windows-msvc-x86_64` 缓存。显式指定含 Qt 6 或其他工具链缓存的 `BUILD_DIR` 时脚本会拒绝继续；更换 SDK 也应使用新目录。更早的 `build/windows-x86_64` 及其中 ZIP 使用不兼容的 MinGW/MSVCRT 组合，不能分发。
 
 运行 `./scripts/build-windows.sh --help` 可查看所有环境变量。可独立复查任意目录：
 
 ```sh
-python3 scripts/verify-windows-runtime.py build/windows-msvc-x86_64/package
+python3 scripts/verify-windows-runtime.py build/windows-qt5-msvc-x86_64/package
 
 # 运行打包运行库约束的回归检查，无需安装 Windows SDK。
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p test_windows_runtime.py

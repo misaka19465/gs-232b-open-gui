@@ -37,7 +37,10 @@ private slots:
     void init();
     void cleanup();
     void networkStartUsesBareCommand();
+    void wifiPollingReportsEveryRequest_data();
     void wifiPollingReportsEveryRequest();
+    void wifiRejectsInvalidConfigurationIds_data();
+    void wifiRejectsInvalidConfigurationIds();
     void ipQueryDoesNotRequireAuthentication();
     void ipQueryPreservesWifiTrial();
     void failedAuthenticationDoesNotStartProvisioning();
@@ -142,25 +145,39 @@ void ApProvisioningConnectionTests::networkStartUsesBareCommand()
     QCOMPARE(m_commands.filter(QStringLiteral("!SESSION AUTH")).size(), 1);
 }
 
+void ApProvisioningConnectionTests::wifiPollingReportsEveryRequest_data()
+{
+    QTest::addColumn<qint64>("candidate");
+    QTest::addColumn<qint64>("revision");
+    QTest::addColumn<qint64>("trial");
+    QTest::newRow("small-ids") << qint64(7) << qint64(2) << qint64(11);
+    QTest::newRow("wide-ids") << qint64(4294967297) << qint64(4294967298) << qint64(4294967299);
+    QTest::newRow("largest-exact-ids") << qint64(9007199254740991) << qint64(9007199254740990)
+                                       << qint64(9007199254740989);
+}
+
 void ApProvisioningConnectionTests::wifiPollingReportsEveryRequest()
 {
+    QFETCH(qint64, candidate);
+    QFETCH(qint64, revision);
+    QFETCH(qint64, trial);
     QSignalSpy sent(m_transport, &Communication::Transport::bytesSent);
     QVERIFY(connectDevice());
-    connect(m_peer, &QWebSocket::textMessageReceived, this, [this](const QString &message) {
+    connect(m_peer, &QWebSocket::textMessageReceived, this, [this, candidate, revision, trial](const QString &message) {
         QString command;
         QJsonObject data;
         if (message.startsWith(QStringLiteral("!SESSION AUTH "))) {
             command = QStringLiteral("SESSION AUTH");
         } else if (message == QStringLiteral("!CFG BEGIN\r")) {
             command = QStringLiteral("CFG BEGIN");
-            data = {{"candidate_id", 7}, {"base_revision", 2}};
+            data = {{"candidate_id", candidate}, {"base_revision", revision}};
         } else if (message.startsWith(QStringLiteral("!NET SET "))) {
             command = QStringLiteral("NET SET");
         } else if (message == QStringLiteral("!CFG CHECK\r")) {
             command = QStringLiteral("CFG CHECK");
         } else if (message.startsWith(QStringLiteral("!CFG APPLY "))) {
             command = QStringLiteral("CFG APPLY");
-            data = {{"trial_id", 11}};
+            data = {{"trial_id", trial}};
         } else if (message == QStringLiteral("!NET GET\r")) {
             command = QStringLiteral("NET GET");
             data = {{"runtime", QJsonObject{{"wifi", QJsonObject{{"connected", false}}}}}};
@@ -198,7 +215,60 @@ void ApProvisioningConnectionTests::wifiPollingReportsEveryRequest()
     const QStringList patches = m_commands.filter(QStringLiteral("!NET SET "));
     QCOMPARE(patches.size(), 1);
     QVERIFY(patches.first().contains(QStringLiteral("wifi-secret")));
+    const QStringList applies = m_commands.filter(QStringLiteral("!CFG APPLY "));
+    QCOMPARE(applies.size(), 1);
+    const QByteArray payload = applies.first().toUtf8().mid(QByteArrayLiteral("!CFG APPLY ").size());
+    const QJsonObject applied = QJsonDocument::fromJson(payload).object();
+    QCOMPARE(applied.value(QStringLiteral("candidate_id")).toDouble(), double(candidate));
+    QCOMPARE(applied.value(QStringLiteral("revision")).toDouble(), double(revision));
     m_connection->disconnectRequested();
+}
+
+void ApProvisioningConnectionTests::wifiRejectsInvalidConfigurationIds_data()
+{
+    QTest::addColumn<QJsonValue>("id");
+    QTest::newRow("null") << QJsonValue();
+    QTest::newRow("string") << QJsonValue(QStringLiteral("7"));
+    QTest::newRow("fractional") << QJsonValue(7.5);
+    QTest::newRow("negative") << QJsonValue(-1);
+    QTest::newRow("imprecise") << QJsonValue(9007199254740992.0);
+}
+
+void ApProvisioningConnectionTests::wifiRejectsInvalidConfigurationIds()
+{
+    QFETCH(QJsonValue, id);
+    QVERIFY(connectDevice());
+    QSignalSpy received(m_transport, &Communication::Transport::bytesReceived);
+    QSignalSpy sent(m_transport, &Communication::Transport::bytesSent);
+    connect(m_peer, &QWebSocket::textMessageReceived, this, [this, id](const QString &message) {
+        QString command;
+        QJsonObject data;
+        if (message.startsWith(QStringLiteral("!SESSION AUTH "))) {
+            command = QStringLiteral("SESSION AUTH");
+        } else if (message == QStringLiteral("!CFG BEGIN\r")) {
+            command = QStringLiteral("CFG BEGIN");
+            data = {{"candidate_id", id}, {"base_revision", 2}};
+        } else {
+            return;
+        }
+        const QJsonObject response{{"cmd", command}, {"ok", true}, {"data", data}};
+        m_peer->sendTextMessage(QLatin1Char('!') +
+                               QString::fromUtf8(QJsonDocument(response).toJson(QJsonDocument::Compact)) +
+                               QStringLiteral("\r\n"));
+    });
+
+    m_window->findChild<QAction *>(QStringLiteral("wifiAction"))->trigger();
+    submitPassword();
+    QTRY_VERIFY(m_window->findChild<WifiProvisioningDialog *>());
+    m_window->findChild<WifiProvisioningDialog *>()->configurationRequested(
+        QStringLiteral("test-wifi"), QStringLiteral("wifi-secret"));
+    QTRY_VERIFY(std::any_of(received.cbegin(), received.cend(), [](const QList<QVariant> &arguments) {
+        return arguments.first().toByteArray().contains("\"cmd\":\"CFG BEGIN\"");
+    }));
+    QVERIFY(std::none_of(sent.cbegin(), sent.cend(), [](const QList<QVariant> &arguments) {
+        const QByteArray command = arguments.first().toByteArray();
+        return command.startsWith("!NET SET ") || command.startsWith("!CFG APPLY ");
+    }));
 }
 
 void ApProvisioningConnectionTests::ipQueryDoesNotRequireAuthentication()

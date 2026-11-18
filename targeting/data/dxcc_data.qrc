@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/dxcc">
+        <file>cty.dat</file>
+        <file>COPYING</file>
+    </qresource>
+</RCC>

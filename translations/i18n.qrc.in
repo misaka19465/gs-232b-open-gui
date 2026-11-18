@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/i18n">
+        <file alias="gs_232b_open_gui_zh_CN.qm">@APP_TRANSLATIONS@</file>
+    </qresource>
+</RCC>

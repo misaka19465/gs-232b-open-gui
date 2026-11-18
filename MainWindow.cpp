@@ -39,7 +39,20 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <cmath>
+
 namespace {
+
+qint64 configurationId(const QJsonValue &value)
+{
+    // NOTE: Qt 5 的 JSON 数字使用 double；拒绝小数和超出精确整数范围的 ID，避免确认错误配置。
+    constexpr double maximumExactInteger = 9007199254740991.0;
+    const double number = value.toDouble(-1);
+    if (!std::isfinite(number) || number < 0 || number > maximumExactInteger ||
+        std::trunc(number) != number)
+        return -1;
+    return static_cast<qint64>(number);
+}
 
 QString managementAuthCommand(const QString &password)
 {
@@ -871,8 +884,8 @@ void MainWindow::handleManagementResponse(const QByteArray &line)
     const QJsonObject data = response.value(QStringLiteral("data")).toObject();
     if (m_networkConfigurationStage == NetworkConfigurationStage::AwaitBegin &&
         command == QStringLiteral("CFG BEGIN")) {
-        m_pendingNetworkCandidate = data.value(QStringLiteral("candidate_id")).toInteger(-1);
-        m_pendingNetworkRevision = data.value(QStringLiteral("base_revision")).toInteger(-1);
+        m_pendingNetworkCandidate = configurationId(data.value(QStringLiteral("candidate_id")));
+        m_pendingNetworkRevision = configurationId(data.value(QStringLiteral("base_revision")));
         if (m_pendingNetworkCandidate < 0) {
             m_console->appendError(tr("Device did not return a network candidate ID."));
             m_networkConfigurationStage = NetworkConfigurationStage::Idle;
@@ -913,7 +926,7 @@ void MainWindow::handleManagementResponse(const QByteArray &line)
 
     if (m_networkConfigurationStage == NetworkConfigurationStage::AwaitApply &&
         command == QStringLiteral("CFG APPLY")) {
-        m_pendingNetworkTrial = data.value(QStringLiteral("trial_id")).toInteger(-1);
+        m_pendingNetworkTrial = configurationId(data.value(QStringLiteral("trial_id")));
         if (m_pendingNetworkTrial < 0) {
             m_console->appendError(tr("Device did not return a network trial ID."));
             m_networkConfigurationStage = NetworkConfigurationStage::Idle;

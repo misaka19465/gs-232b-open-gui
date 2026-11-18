@@ -55,7 +55,7 @@ RotorModelDialog::RotorModelDialog(QWidget *parent) : QDialog(parent)
     connect(m_apply, &QPushButton::clicked, this, [this] {
         emit modelApplyRequested(selectedModelId());
     });
-    connect(m_model, &QComboBox::currentIndexChanged, this, &RotorModelDialog::updateControls);
+    connect(m_model, qOverload<int>(&QComboBox::currentIndexChanged), this, &RotorModelDialog::updateControls);
     clearDeviceModel();
 }
 

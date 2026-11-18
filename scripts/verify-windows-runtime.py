@@ -33,7 +33,7 @@ def verify(path: pathlib.Path) -> None:
     if forbidden:
         raise ValueError(f"{path}：混入不兼容或 Debug 运行库：{', '.join(forbidden)}")
     # NOTE: 中性系统辅助 DLL 可以没有 CRT 导入；应用和 Qt 必须使用动态 MSVC CRT。
-    if path.suffix.lower() == ".exe" or path.name.lower().startswith("qt6") or path.name.lower() == "qwindows.dll":
+    if path.suffix.lower() == ".exe" or path.name.lower().startswith("qt5") or path.name.lower() == "qwindows.dll":
         if not any(name.startswith(("vcruntime140", "msvcp140")) for name in imports):
             raise ValueError(f"{path}：未发现动态 MSVC 运行库")
         if not any(name == "ucrtbase.dll" or name.startswith("api-ms-win-crt-") for name in imports):

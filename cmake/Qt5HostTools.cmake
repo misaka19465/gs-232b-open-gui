@@ -1,0 +1,13 @@
+# NOTE: Qt 5 的目标 SDK 不识别 QT_HOST_PATH；交叉编译时显式使用同版本 Linux 工具。
+if(CMAKE_CROSSCOMPILING AND QT_HOST_PATH)
+    foreach(tool moc rcc uic lrelease lupdate)
+        set(host_tool "${QT_HOST_PATH}/bin/${tool}")
+        if(NOT EXISTS "${host_tool}")
+            message(FATAL_ERROR "Qt 5.15 host tool not found: ${host_tool}")
+        endif()
+        set_target_properties(Qt5::${tool} PROPERTIES IMPORTED_LOCATION "${host_tool}")
+        if(TARGET Qt::${tool})
+            set_target_properties(Qt::${tool} PROPERTIES IMPORTED_LOCATION "${host_tool}")
+        endif()
+    endforeach()
+endif()

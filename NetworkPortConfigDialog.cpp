@@ -60,7 +60,7 @@ NetworkPortConfigDialog::NetworkPortConfigDialog(QWidget *parent) : QDialog(pare
         configuration.dns2 = m_dns2->text().trimmed();
         emit configurationRequested(configuration);
     });
-    connect(m_mode, &QComboBox::currentIndexChanged,
+    connect(m_mode, qOverload<int>(&QComboBox::currentIndexChanged),
             this, &NetworkPortConfigDialog::updateControls);
     connect(m_address, &QLineEdit::textChanged, this, &NetworkPortConfigDialog::updateControls);
     connect(m_netmask, &QLineEdit::textChanged, this, &NetworkPortConfigDialog::updateControls);

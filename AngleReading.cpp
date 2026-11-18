@@ -113,7 +113,7 @@ bool AngleReading::eventFilter(QObject *watched, QEvent *event)
 void AngleReading::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && m_editingEnabled &&
-        rect().contains(event->position().toPoint())) {
+        rect().contains(event->pos())) {
         beginEditing();
         event->accept();
         return;

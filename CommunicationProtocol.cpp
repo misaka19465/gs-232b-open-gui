@@ -9,10 +9,10 @@ namespace Communication {
 
 namespace {
 
-constexpr QLatin1StringView kGs232bPath("/ws/gs232b");
-constexpr QLatin1StringView kManagePath("/ws/manage");
+const QLatin1String kGs232bPath("/ws/gs232b");
+const QLatin1String kManagePath("/ws/manage");
 
-QLatin1StringView endpointPath(WebSocketEndpoint endpoint)
+QLatin1String endpointPath(WebSocketEndpoint endpoint)
 {
     return endpoint == WebSocketEndpoint::Manage ? kManagePath : kGs232bPath;
 }
@@ -38,7 +38,7 @@ QUrl makeWebSocketUrl(const QString &address, WebSocketEndpoint endpoint)
     if (url.scheme() != QStringLiteral("ws") && url.scheme() != QStringLiteral("wss"))
         return {};
 
-    url.setPath(endpointPath(endpoint).toString());
+    url.setPath(endpointPath(endpoint));
     url.setQuery({});
     url.setFragment({});
     return url;
@@ -65,7 +65,8 @@ Transport::Transport(QObject *parent)
             this, &Transport::onWebSocketTextMessage);
     connect(m_webSocket, &QWebSocket::binaryMessageReceived,
             this, &Transport::onWebSocketBinaryMessage);
-    connect(m_webSocket, &QWebSocket::errorOccurred, this, &Transport::onWebSocketError);
+    connect(m_webSocket, qOverload<QAbstractSocket::SocketError>(&QWebSocket::error),
+            this, &Transport::onWebSocketError);
 }
 
 Transport::~Transport()

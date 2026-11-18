@@ -37,8 +37,8 @@ cp -- "$redist_dir/"*.dll "$package_dir/"
 # NOTE: 临时工具目录中的 qt.conf 指回所选 SDK，不改写自备 SDK，也不依赖注册表中的 Qt。
 tools_dir=$staging_dir/deploy-tools
 mkdir -p -- "$tools_dir"
-cp -- "$qt_windows/bin/windeployqt.exe" "$qt_windows/bin/qtpaths6.exe" \
-    "$qt_windows/bin/Qt6Core.dll" "$tools_dir/"
+cp -- "$qt_windows/bin/windeployqt.exe" "$qt_windows/bin/qmake.exe" \
+    "$qt_windows/bin/Qt5Core.dll" "$tools_dir/"
 cp -- "$redist_dir/"*.dll "$tools_dir/"
 
 # NOTE: 独立 Wine 前缀供编译和部署使用，不改动用户已有的 Wine 环境。
@@ -51,7 +51,7 @@ qt_prefix_windows=$(winepath -w "$qt_windows")
 tools_windows=$(winepath -w "$tools_dir")
 printf '[Paths]\nPrefix=%s\n' "${qt_prefix_windows//\\//}" > "$tools_dir/qt.conf"
 export WINEPATH="$tools_windows;$qt_bin_windows"
-wine "$tools_dir/windeployqt.exe" --qtpaths "$tools_windows\\qtpaths6.exe" \
+wine "$tools_dir/windeployqt.exe" \
     --release --no-compiler-runtime \
     --no-opengl-sw --no-system-d3d-compiler --no-translations \
     --dir "$package_windows" "$package_windows\\gs_232b_open_gui.exe"
@@ -62,9 +62,13 @@ Prefix=.
 Plugins=.
 Translations=translations
 EOF
-# NOTE: main.cpp 按 qtbase 名称加载翻译；windeployqt 默认合并成 qt_zh_CN，名称不匹配。
+# NOTE: Qt 5.15.2 官方简体中文目录使用 qt 名称；其他 Qt 5.15 发行包可能提供 qtbase。
 mkdir -p -- "$package_dir/translations"
-cp -- "$qt_windows/translations/qtbase_zh_CN.qm" "$package_dir/translations/"
+qt_translation=$qt_windows/translations/qtbase_zh_CN.qm
+if [[ ! -f $qt_translation ]]; then
+    qt_translation=$qt_windows/translations/qt_zh_CN.qm
+fi
+cp -- "$qt_translation" "$package_dir/translations/"
 cp -- "$project_dir/LICENSE" "$package_dir/"
 cp -R -- "$build_dir/licenses" "$package_dir/"
 for license_dir in LICENSES licenses; do

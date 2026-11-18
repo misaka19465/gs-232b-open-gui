@@ -113,6 +113,16 @@
             <source>CONSOLE</source>
             <translation>控制台</translation>
         </message>
+        <message>
+            <location filename="../ConsolePanel.cpp" line="22" />
+            <source>Enter command</source>
+            <translation>输入命令</translation>
+        </message>
+        <message>
+            <location filename="../ConsolePanel.cpp" line="23" />
+            <source>Send</source>
+            <translation>发送</translation>
+        </message>
     </context>
     <context>
         <name>ControlPanel</name>
@@ -1068,25 +1078,6 @@ Wireless IP: %2</source>
         <message>
             <source>Select distinct bridge and client ports from an existing virtual COM pair.</source>
             <translation>请从已创建的虚拟串口对中选择不同的桥接端口和客户端端口。</translation>
-        </message>
-    </context>
-    <context>
-        <name>TerminalWidget</name>
-        <message>
-            <source>Device terminal</source>
-            <translation>设备终端</translation>
-        </message>
-        <message>
-            <source>Copy</source>
-            <translation>复制</translation>
-        </message>
-        <message>
-            <source>Paste</source>
-            <translation>粘贴</translation>
-        </message>
-        <message>
-            <source>Select all</source>
-            <translation>全选</translation>
         </message>
     </context>
     <context>
