@@ -389,6 +389,10 @@
             <translation>方位角补偿…</translation>
         </message>
         <message>
+            <source>Antenna gain...</source>
+            <translation>天线增益…</translation>
+        </message>
+        <message>
             <source>Settings</source>
             <translation>设置</translation>
         </message>
@@ -1221,6 +1225,33 @@ Turn the map off and on to retry</source>
         <message>
             <source>Could not save the azimuth offset.</source>
             <translation>无法保存方位角补偿。</translation>
+        </message>
+    </context>
+    <context>
+        <name>AntennaGainDialog</name>
+        <message>
+            <source>Antenna gain</source>
+            <translation>天线增益</translation>
+        </message>
+        <message>
+            <source>Antenna gain (dBi)</source>
+            <translation>天线增益（dBi）</translation>
+        </message>
+        <message>
+            <source>Reference only: higher gain produces a narrower main lobe. The lobe is shown only on the great-circle map; 0 dBi hides it.</source>
+            <translation>仅作参考：增益越高，主瓣越窄。波瓣只在大圆图中显示；设为 0 dBi 时隐藏波瓣。</translation>
+        </message>
+        <message>
+            <source>Cancel</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <source>Save</source>
+            <translation>保存</translation>
+        </message>
+        <message>
+            <source>Could not save the antenna gain.</source>
+            <translation>无法保存天线增益。</translation>
         </message>
     </context>
     <context>

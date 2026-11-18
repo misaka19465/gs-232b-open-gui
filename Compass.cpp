@@ -8,6 +8,47 @@
 #include <QPainterPath>
 #include <QtMath>
 
+namespace {
+
+constexpr qreal MinimumLobeWidth = 10.0;
+constexpr qreal MaximumLobeWidth = 180.0;
+
+QPointF compassDirection(qreal degrees)
+{
+    const qreal radians = qDegreesToRadians(degrees - 90.0);
+    return {qCos(radians), qSin(radians)};
+}
+
+qreal lobeHalfWidth(qreal gain)
+{
+    // NOTE: 用对称天线的简化近似把增益转换为半功率波束宽度；只作方向参考。
+    const qreal directivity = qPow(10.0, gain / 10.0);
+    const qreal width = qBound(MinimumLobeWidth, qSqrt(41253.0 / directivity),
+                               MaximumLobeWidth);
+    return width / 2.0;
+}
+
+QPainterPath antennaLobePath(qreal angle, qreal radius, qreal gain)
+{
+    const qreal halfWidth = lobeHalfWidth(gain);
+    const qreal edgeCosine = qCos(qDegreesToRadians(halfWidth));
+    const int sampleCount = qMax(12, qCeil(halfWidth * 1.5));
+    QPainterPath path;
+    path.moveTo(QPointF());
+    for (int index = 0; index <= sampleCount; ++index) {
+        const qreal relative = -halfWidth + (2.0 * halfWidth * index) / sampleCount;
+        const qreal cosine = qCos(qDegreesToRadians(relative));
+        const qreal normalized = qBound(qreal(0), (cosine - edgeCosine) / (1.0 - edgeCosine),
+                                        qreal(1));
+        const qreal distance = radius * qSqrt(normalized);
+        path.lineTo(compassDirection(angle + relative) * distance);
+    }
+    path.closeSubpath();
+    return path;
+}
+
+} // namespace
+
 Compass::Compass(QWidget *parent) : QWidget(parent), m_map(new GreatCircleMap(this))
 {
     setObjectName(QStringLiteral("azimuthCompass"));
@@ -32,6 +73,12 @@ void Compass::setStationGrid(const QString &grid)
     if (m_mapEnabled)
         m_map->load(m_stationGrid);
     updateMapStatus();
+}
+
+void Compass::setAntennaGain(double gain)
+{
+    m_antennaGain = qBound(0.0, gain, 60.0);
+    update();
 }
 
 void Compass::updateMapStatus()
@@ -104,6 +151,15 @@ void Compass::paintEvent(QPaintEvent *)
         circle.addEllipse(bounds);
         painter.setClipPath(circle);
         painter.drawImage(bounds, m_themedMap);
+        if (m_antennaGain > 0.0) {
+            QColor fill = palette().color(QPalette::Active, QPalette::Highlight);
+            fill.setAlpha(82);
+            QColor outline = palette().color(QPalette::Active, QPalette::Text);
+            outline.setAlpha(220);
+            painter.setPen(QPen(outline, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            painter.setBrush(fill);
+            painter.drawPath(antennaLobePath(m_angle % 360, radius * 0.94, m_antennaGain));
+        }
     } else {
         painter.setPen(QPen(ink, 1.4));
         painter.drawEllipse(QPointF(), radius, radius);

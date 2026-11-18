@@ -41,6 +41,8 @@ public:
     void setGreatCircleMapEnabled(bool enabled);
     /** @brief 更新大圆图与目标方位计算使用的本站网格，后续提交立即使用新值。 */
     void setStationGrid(const QString &grid);
+    /** @brief 更新大圆图参考波瓣的天线增益；0 dBi 时隐藏波瓣。 */
+    void setAntennaGain(double gain);
     /** @return 最近一次设备方位读数，不包含补偿；供分轴反馈及 W 命令保留机械行程。 */
     int azimuth() const;
     /** @return 当前界面保留的仰角读数。 */

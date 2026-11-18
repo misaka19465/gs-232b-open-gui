@@ -91,6 +91,8 @@ target_include_directories(gs232b_wsjtx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(gs232b_wsjtx PUBLIC Qt5::Core Qt5::Network gs232b_targeting)
 
 set(GUI_SOURCES
+    AntennaGainDialog.cpp
+    AntennaGainDialog.h
     AppSettings.cpp
     AppSettings.h
     AngleReading.cpp

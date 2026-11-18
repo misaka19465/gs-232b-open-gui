@@ -3,6 +3,7 @@
 #include "n1mm/N1mmProtocol.h"
 
 #include <array>
+#include <cmath>
 
 namespace {
 
@@ -13,6 +14,7 @@ const QString NetworkModeKey = QStringLiteral("connection/networkMode");
 const QString ConsoleVisibleKey = QStringLiteral("view/consoleVisible");
 const QString AlwaysOnTopKey = QStringLiteral("view/alwaysOnTop");
 const QString GreatCircleMapEnabledKey = QStringLiteral("view/greatCircleMapEnabled");
+const QString AntennaGainKey = QStringLiteral("view/antennaGain");
 const QString StationGridKey = QStringLiteral("station/grid");
 const QString AzimuthOffsetKey = QStringLiteral("rotor/azimuthOffset");
 const QString ShortestPathEnabledKey = QStringLiteral("rotor/shortestPathEnabled");
@@ -144,6 +146,22 @@ bool AppSettings::greatCircleMapEnabled() const
 bool AppSettings::setGreatCircleMapEnabled(bool enabled)
 {
     return storeValue(GreatCircleMapEnabledKey, enabled);
+}
+
+double AppSettings::antennaGain() const
+{
+    bool ok = false;
+    const double gain = m_settings.value(AntennaGainKey).toDouble(&ok);
+    return ok && std::isfinite(gain) && gain >= minimumAntennaGain() &&
+               gain <= maximumAntennaGain()
+           ? gain
+           : minimumAntennaGain();
+}
+
+bool AppSettings::setAntennaGain(double gain)
+{
+    return std::isfinite(gain) && gain >= minimumAntennaGain() &&
+           gain <= maximumAntennaGain() && storeValue(AntennaGainKey, gain);
 }
 
 int AppSettings::azimuthOffset() const

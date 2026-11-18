@@ -27,6 +27,7 @@ private slots:
     void persistsAzimuthOffset();
     void invalidStoredAzimuthOffset_data();
     void invalidStoredAzimuthOffset();
+    void persistsAntennaGain();
     void readsShortestPathPreference_data();
     void readsShortestPathPreference();
     void persistsN1mmPreferences();
@@ -54,6 +55,7 @@ void AppSettingsTests::defaultsDoNotWrite()
     QVERIFY(!settings.consoleVisible());
     QVERIFY(!settings.alwaysOnTop());
     QVERIFY(!settings.greatCircleMapEnabled());
+    QCOMPARE(settings.antennaGain(), 0.0);
     QVERIFY(settings.stationGrid().isEmpty());
     QCOMPARE(settings.azimuthOffset(), 0);
     QVERIFY(settings.shortestPathEnabled());
@@ -346,6 +348,31 @@ void AppSettingsTests::invalidStoredAzimuthOffset()
     QCOMPARE(file.readAll(), content);
 }
 
+void AppSettingsTests::persistsAntennaGain()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    QVERIFY(settings.setAntennaGain(12.5));
+    QCOMPARE(AppSettings(fileName).antennaGain(), 12.5);
+    QVERIFY(settings.setAntennaGain(AppSettings::maximumAntennaGain()));
+    QCOMPARE(AppSettings(fileName).antennaGain(), AppSettings::maximumAntennaGain());
+    QVERIFY(settings.setAntennaGain(AppSettings::minimumAntennaGain()));
+    QCOMPARE(AppSettings(fileName).antennaGain(), 0.0);
+
+    for (const double invalid : {-0.1, 60.1, std::numeric_limits<double>::quiet_NaN(),
+                                 std::numeric_limits<double>::infinity()}) {
+        QVERIFY(!settings.setAntennaGain(invalid));
+        QCOMPARE(AppSettings(fileName).antennaGain(), 0.0);
+    }
+
+    QSettings raw(fileName, QSettings::IniFormat);
+    raw.setValue(QStringLiteral("view/antennaGain"), QStringLiteral("not-a-gain"));
+    raw.sync();
+    QCOMPARE(AppSettings(fileName).antennaGain(), 0.0);
+}
+
 void AppSettingsTests::validatesAndPersistsStationGrid_data()
 {
     QTest::addColumn<QString>("grid");
@@ -553,6 +580,7 @@ void AppSettingsTests::reportsStorageFailure()
     QVERIFY(!settings.setNetworkMode(true));
     QVERIFY(!settings.setConsoleVisible(true));
     QVERIFY(!settings.setGreatCircleMapEnabled(true));
+    QVERIFY(!settings.setAntennaGain(12.5));
     QVERIFY(!settings.setAzimuthOffset(-30));
     QVERIFY(!settings.setShortestPathEnabled(false));
     QVERIFY(!settings.setN1mmEnabled(true));

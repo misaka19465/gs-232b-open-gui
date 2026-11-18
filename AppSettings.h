@@ -52,6 +52,15 @@ public:
     /** @return 立即同步大圆图模式偏好到存储是否成功。 */
     bool setGreatCircleMapEnabled(bool enabled);
 
+    /** @brief 返回天线增益允许的最小值，单位为 dBi；0 表示不显示参考波瓣。 */
+    static constexpr double minimumAntennaGain() { return 0.0; }
+    /** @brief 返回天线增益允许的最大值，单位为 dBi。 */
+    static constexpr double maximumAntennaGain() { return 60.0; }
+    /** @brief 读取参考天线增益；缺失或超出范围时返回 0 dBi。 */
+    double antennaGain() const;
+    /** @return 参数合法且立即同步参考天线增益到存储成功时返回 true。 */
+    bool setAntennaGain(double gain);
+
     /** @brief 读取方位角补偿；完整支持 int 范围的正负整数度，缺失或无效时返回 0。 */
     int azimuthOffset() const;
     /** @return 立即同步方位角补偿到存储是否成功。 */

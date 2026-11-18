@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "AntennaGainDialog.h"
 #include "AppSettings.h"
 #include "AzimuthOffsetDialog.h"
 #include "CalibrationDialog.h"
@@ -271,6 +272,7 @@ void MainWindow::createMenus()
     files->addAction(tr("Exit"), qApp, &QCoreApplication::quit);
     createViewMenu();
     const AppSettings preferences;
+    m_control->setAntennaGain(preferences.antennaGain());
     auto *settings = menuBar()->addMenu(tr("Settings"));
     auto *stationGridAction = settings->addAction(
         tr("My grid..."), this, &MainWindow::openStationGrid);
@@ -278,6 +280,9 @@ void MainWindow::createMenus()
     auto *offsetAction = settings->addAction(
         tr("Azimuth offset..."), this, &MainWindow::openAzimuthOffset);
     offsetAction->setObjectName(QStringLiteral("azimuthOffsetAction"));
+    auto *antennaGainAction = settings->addAction(
+        tr("Antenna gain..."), this, &MainWindow::openAntennaGain);
+    antennaGainAction->setObjectName(QStringLiteral("antennaGainAction"));
     auto *shortestPathAction = settings->addAction(tr("Shortest rotation path"));
     shortestPathAction->setObjectName(QStringLiteral("shortestPathAction"));
     shortestPathAction->setCheckable(true);
@@ -456,6 +461,16 @@ void MainWindow::openAzimuthOffset()
         m_gridTracker->setAzimuthOffset(AppSettings().azimuthOffset());
         m_wsjtX->setAzimuthOffset(AppSettings().azimuthOffset());
         updateCalibrationPosition();
+    });
+    dialog->open();
+}
+
+void MainWindow::openAntennaGain()
+{
+    auto *dialog = new AntennaGainDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(dialog, &QDialog::accepted, this, [this] {
+        m_control->setAntennaGain(AppSettings().antennaGain());
     });
     dialog->open();
 }

@@ -265,6 +265,11 @@ void ControlPanel::setStationGrid(const QString &grid)
     m_compass->setStationGrid(grid);
 }
 
+void ControlPanel::setAntennaGain(double gain)
+{
+    m_compass->setAntennaGain(gain);
+}
+
 int ControlPanel::elevation() const
 {
     return m_elevationValue;

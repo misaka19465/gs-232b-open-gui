@@ -66,6 +66,7 @@ private:
     void startApProvisioning();
     void openStationGrid();
     void openAzimuthOffset();
+    void openAntennaGain();
     void openCalibration();
     void updateCalibrationState();
     void updateCalibrationPosition();

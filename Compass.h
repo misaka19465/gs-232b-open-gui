@@ -19,6 +19,8 @@ public:
     void setGreatCircleMapEnabled(bool enabled);
     /** @brief 设置地图中心网格；开启大圆图时立即加载对应缓存或请求生成。 */
     void setStationGrid(const QString &grid);
+    /** @brief 设置仅用于大圆图参考显示的天线增益；0 dBi 隐藏波瓣。 */
+    void setAntennaGain(double gain);
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -41,5 +43,6 @@ private:
     QImage m_themedMap;
     QString m_stationGrid;
     bool m_mapEnabled = false;
+    double m_antennaGain = 0.0;
     int m_angle = 0;
 };
