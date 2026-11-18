@@ -8,6 +8,7 @@
 #include "FaultStatusMonitor.h"
 #include "n1mm/N1mmController.h"
 #include "gridtracker/GridTrackerController.h"
+#include "wsjtx/WsjtXController.h"
 
 #include <QAction>
 #include <QMessageBox>
@@ -68,6 +69,7 @@ void MainWindow::requestCalibration(const QString &command, const QString &quest
     // NOTE: 确认弹窗也暂停外部定位，避免用户确认零点前被桥接或延迟滑条命令转离。
     m_n1mm->setControlAvailable(false);
     m_gridTracker->setControlAvailable(false);
+    m_wsjtX->setControlAvailable(false);
     m_control->cancelPendingMotion();
     QWidget *promptParent = m_calibrationDialog ? static_cast<QWidget *>(m_calibrationDialog.data()) : this;
     const auto answer = QMessageBox::question(

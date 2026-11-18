@@ -32,6 +32,7 @@ private slots:
     void persistsN1mmPreferences();
     void invalidN1mmPreferencesUseDefaults();
     void persistsGridTrackerPreference();
+    void persistsWsjtXPreferences();
     void validatesAndPersistsStationGrid_data();
     void validatesAndPersistsStationGrid();
     void clearsStationGrid();
@@ -527,6 +528,18 @@ void AppSettingsTests::persistsGridTrackerPreference()
     QCOMPARE(raw.value(QStringLiteral("gridtracker/enabled")).toString(), QStringLiteral("invalid"));
 }
 
+void AppSettingsTests::persistsWsjtXPreferences()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    QVERIFY(!settings.wsjtXEnabled());
+    QVERIFY(settings.setWsjtXEnabled(true));
+    const AppSettings reopened(fileName);
+    QVERIFY(reopened.wsjtXEnabled());
+}
+
 void AppSettingsTests::reportsStorageFailure()
 {
     QTemporaryDir directory;
@@ -544,6 +557,7 @@ void AppSettingsTests::reportsStorageFailure()
     QVERIFY(!settings.setShortestPathEnabled(false));
     QVERIFY(!settings.setN1mmEnabled(true));
     QVERIFY(!settings.setGridTrackerEnabled(true));
+    QVERIFY(!settings.setWsjtXEnabled(true));
     QVERIFY(!settings.setN1mmRotorName(QStringLiteral("Tower A")));
     QVERIFY(!settings.setStationGrid(QStringLiteral("PM95AA")));
     QVERIFY(!settings.setPresetAngle(AppSettings::Axis::Azimuth, 0, 90));

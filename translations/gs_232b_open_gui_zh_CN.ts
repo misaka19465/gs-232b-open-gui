@@ -349,6 +349,18 @@
             <translation>GridTracker</translation>
         </message>
         <message>
+            <source>WSJT-X / JTDX...</source>
+            <translation>WSJT-X / JTDX…</translation>
+        </message>
+        <message>
+            <source>WSJT-X / JTDX</source>
+            <translation>WSJT-X / JTDX</translation>
+        </message>
+        <message>
+            <source>Follow the selected DX station using WSJT-X / JTDX on 127.0.0.1:2237.</source>
+            <translation>通过 127.0.0.1:2237 跟踪 WSJT-X / JTDX 中当前选中的 DX 电台。</translation>
+        </message>
+        <message>
             <source>Receive CatRotator / PstRotator commands on 127.0.0.1:12000.</source>
             <translation>在 127.0.0.1:12000 接收 CatRotator / PstRotator 控制命令。</translation>
         </message>
@@ -1209,6 +1221,21 @@ Turn the map off and on to retry</source>
         <message>
             <source>Could not save the azimuth offset.</source>
             <translation>无法保存方位角补偿。</translation>
+        </message>
+    </context>
+    <context>
+        <name>WsjtXController</name>
+        <message>
+            <source>Could not enable WSJT-X / JTDX integration: %1</source>
+            <translation>无法启用 WSJT-X / JTDX 接入：%1</translation>
+        </message>
+        <message>
+            <source>WSJT-X / JTDX target ignored: set your station grid first.</source>
+            <translation>未跟踪 WSJT-X / JTDX 目标：请先设置本站网格。</translation>
+        </message>
+        <message>
+            <source>WSJT-X / JTDX target ignored: no recent rotator position is available.</source>
+            <translation>未跟踪 WSJT-X / JTDX 目标：尚无最新的旋转器方位读数。</translation>
         </message>
     </context>
     <context>

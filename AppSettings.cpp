@@ -19,6 +19,7 @@ const QString ShortestPathEnabledKey = QStringLiteral("rotor/shortestPathEnabled
 const QString N1mmEnabledKey = QStringLiteral("n1mm/enabled");
 const QString N1mmRotorNameKey = QStringLiteral("n1mm/rotorName");
 const QString GridTrackerEnabledKey = QStringLiteral("gridtracker/enabled");
+const QString WsjtXEnabledKey = QStringLiteral("wsjtx/enabled");
 
 bool isSupportedBaudRate(int baudRate)
 {
@@ -196,6 +197,16 @@ bool AppSettings::gridTrackerEnabled() const
 bool AppSettings::setGridTrackerEnabled(bool enabled)
 {
     return storeValue(GridTrackerEnabledKey, enabled);
+}
+
+bool AppSettings::wsjtXEnabled() const
+{
+    return readBoolean(m_settings.value(WsjtXEnabledKey));
+}
+
+bool AppSettings::setWsjtXEnabled(bool enabled)
+{
+    return storeValue(WsjtXEnabledKey, enabled);
 }
 
 QString AppSettings::stationGrid() const

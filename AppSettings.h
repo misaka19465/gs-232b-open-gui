@@ -76,6 +76,11 @@ public:
     /** @return 立即同步 GridTracker 接入偏好到存储是否成功。 */
     bool setGridTrackerEnabled(bool enabled);
 
+    /** @brief 读取同机 WSJT-X/JTDX 接入偏好；缺失或无效时默认关闭。 */
+    bool wsjtXEnabled() const;
+    /** @return 立即同步 WSJT-X/JTDX 接入偏好到存储是否成功。 */
+    bool setWsjtXEnabled(bool enabled);
+
     /** @brief 读取本站 Maidenhead 网格；返回大写，缺失或无效时返回空字符串。 */
     QString stationGrid() const;
     /**

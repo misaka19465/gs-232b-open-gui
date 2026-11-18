@@ -19,6 +19,7 @@
 | N1MM 接入 | `n1mm/enabled` | 默认关闭；布尔值校验与控制台显示一致，重启恢复监听；绑定失败保持关闭且不覆盖已保存偏好 |
 | N1MM 旋转器名称 | `n1mm/rotorName` | 默认 `GS232B`；去除首尾空白后为 1–64 个字符，禁止逗号、`@`、制表符、换行和控制字符；缺失或无效时回退默认值 |
 | GridTracker 接入 | `gridtracker/enabled` | 默认关闭；布尔值校验与控制台显示一致，重启恢复本机 UDP 12000 监听；绑定失败保持关闭且不覆盖已保存偏好 |
+| WSJT-X/JTDX 接入 | `wsjtx/enabled` | 默认关闭；布尔值校验与控制台显示一致，重启恢复本机 UDP 2237 监听；绑定失败保持关闭且不覆盖已保存偏好 |
 | 方位预设 | `azimuthPreset0` 至 `azimuthPreset9` | 默认 `0、45、90、135、180、225、270、315、360、405`；整数范围 0–450 度 |
 | 仰角预设 | `elevationPreset0` 至 `elevationPreset5` | 默认 `0、25、50、75、100、125`；整数范围 0–180 度 |
 
@@ -61,3 +62,5 @@
 通过“桥接 → N1MM Logger+… → 启用”接收同机 N1MM 的旋转器命令，“配置名称…”修改名称并立即保存、生效。接入和名称的设置、通信约定与使用步骤见 [N1MM Logger+ 接入](n1mm-integration.md)。
 
 通过“桥接 → GridTracker… → 启用”接收同机 GridTracker 的旋转器定位，并为 GridTracker 2 回复实测位置。使用 CatRotator / PstRotator 协议，配置和通信约定见 [GridTracker 接入](gridtracker-integration.md)。
+
+通过“桥接 → WSJT-X / JTDX… → 启用”跟踪当前选中的 DX 目标。配置与报文范围见 [WSJT-X/JTDX 接入](wsjtx-integration.md)。

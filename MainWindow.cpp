@@ -18,6 +18,7 @@
 #include "virtual_serial/VirtualSerialBridge.h"
 #include "n1mm/N1mmController.h"
 #include "gridtracker/GridTrackerController.h"
+#include "wsjtx/WsjtXController.h"
 
 #include <QActionGroup>
 #include <QApplication>
@@ -220,6 +221,7 @@ MainWindow::~MainWindow()
     // NOTE: 先关闭两侧连接，避免 QObject 子对象析构时回调已销毁的界面。
     m_n1mm->setEnabled(false);
     m_gridTracker->setEnabled(false);
+    m_wsjtX->setEnabled(false);
     const QSignalBlocker transportBlocker(m_transport);
     const QSignalBlocker virtualSerialBlocker(m_virtualSerial);
     m_transport->close();
@@ -284,6 +286,7 @@ void MainWindow::createMenus()
         m_control->setShortestPathEnabled(enabled);
         m_n1mm->setShortestPathEnabled(enabled);
         m_gridTracker->setShortestPathEnabled(enabled);
+        m_wsjtX->setShortestPathEnabled(enabled);
         if (!AppSettings().setShortestPathEnabled(enabled))
             QMessageBox::warning(this, tr("Application settings"),
                                  tr("Could not save application settings."));
@@ -338,6 +341,7 @@ void MainWindow::createMenus()
     auto *bridge = menuBar()->addMenu(tr("Bridge"));
     createN1mmMenu(bridge);
     createGridTrackerMenu(bridge);
+    createWsjtXMenu(bridge);
     auto *upgrade = menuBar()->addMenu(tr("Upgrade"));
     m_upgradeAction = upgrade->addAction(tr("Flash firmware..."),
                                         this, &MainWindow::openFirmwareUpgrade);
@@ -353,6 +357,7 @@ void MainWindow::setDevicePosition(int azimuth, int elevation)
     // NOTE: 校准保留设备原值，避免越过满量程的反馈被主控件钳位为 450° 或 180°。
     m_controllerAzimuth = azimuth;
     m_controllerElevation = elevation;
+    m_wsjtX->setPosition(azimuth);
     m_control->setPosition(azimuth, elevation);
     updateCalibrationPosition();
 }
@@ -434,7 +439,9 @@ void MainWindow::openStationGrid()
     auto *dialog = new StationGridDialog(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     connect(dialog, &QDialog::accepted, this, [this] {
-        m_control->setStationGrid(AppSettings().stationGrid());
+        const QString grid = AppSettings().stationGrid();
+        m_control->setStationGrid(grid);
+        m_wsjtX->setStationGrid(grid);
     });
     dialog->open();
 }
@@ -447,6 +454,7 @@ void MainWindow::openAzimuthOffset()
         m_control->setAzimuthOffset(AppSettings().azimuthOffset());
         m_n1mm->setAzimuthOffset(AppSettings().azimuthOffset());
         m_gridTracker->setAzimuthOffset(AppSettings().azimuthOffset());
+        m_wsjtX->setAzimuthOffset(AppSettings().azimuthOffset());
         updateCalibrationPosition();
     });
     dialog->open();

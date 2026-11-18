@@ -6,6 +6,7 @@
 #include "ControlPanel.h"
 #include "gridtracker/GridTrackerController.h"
 #include "n1mm/N1mmController.h"
+#include "wsjtx/WsjtXController.h"
 
 #include <QAction>
 #include <QMenu>
@@ -75,6 +76,8 @@ void MainWindow::updateBridgeState()
                            m_pendingCalibrationCommand.isEmpty();
     m_n1mm->setControlAvailable(available);
     m_gridTracker->setControlAvailable(available);
+    m_wsjtX->setControlAvailable(available);
     m_n1mm->setTrackingEnabled(m_control->trackingEnabled());
     m_gridTracker->setTrackingEnabled(m_control->trackingEnabled());
+    m_wsjtX->setTrackingEnabled(m_control->trackingEnabled());
 }

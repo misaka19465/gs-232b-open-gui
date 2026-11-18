@@ -23,6 +23,7 @@ class QShowEvent;
 class QTimer;
 class VirtualSerialBridge;
 class N1mmController;
+class WsjtXController;
 struct EthernetConfiguration;
 
 namespace Communication {
@@ -49,6 +50,7 @@ private:
     void setAlwaysOnTop(bool enabled);
     void createN1mmMenu(QMenu *bridge);
     void createGridTrackerMenu(QMenu *bridge);
+    void createWsjtXMenu(QMenu *bridge);
     void updateBridgeState();
     void openN1mmName();
     void updateConnectionState();
@@ -112,6 +114,7 @@ private:
     VirtualSerialBridge *m_virtualSerial;
     N1mmController *m_n1mm;
     GridTrackerController *m_gridTracker;
+    WsjtXController *m_wsjtX;
     QAction *m_n1mmEnableAction;
     QAction *m_connectionAction;
     QAction *m_authenticateAction;
