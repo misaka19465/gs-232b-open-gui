@@ -132,24 +132,16 @@
             <translation>允许桥接应用控制旋转器。</translation>
         </message>
         <message>
+            <source>Automatically point the antenna using the configured wind direction offset.</source>
+            <translation>根据所选天气源和风向偏移角自动定位天线。</translation>
+        </message>
+        <message>
             <source>Use long path for grid, callsign or DXCC targets and GridTracker. Direct angles and N1MM targets are unchanged.</source>
             <translation>对网格、呼号/DXCC 及 GridTracker 目标使用长径。直接角度及 N1MM 目标不受影响。</translation>
         </message>
         <message>
             <source>Wind protection</source>
             <translation>抗风</translation>
-        </message>
-        <message>
-            <source>When configured, wind protection takes priority over bridge control and points to wind direction plus the configured offset.</source>
-            <translation>抗风配置完整时优先于桥接控制，并自动将天线转到来风方向加设定偏移角。</translation>
-        </message>
-        <message>
-            <source>Offset</source>
-            <translation>偏移</translation>
-        </message>
-        <message>
-            <source>Target azimuth = wind-from direction + offset.</source>
-            <translation>目标方位角 = 来风方向 + 偏移角。</translation>
         </message>
         <message>
             <source>Wind from %1° · &lt;a href="https://open-meteo.com/"&gt;Open-Meteo&lt;/a&gt; · &lt;a href="https://creativecommons.org/licenses/by/4.0/"&gt;CC BY 4.0&lt;/a&gt;</source>
@@ -242,6 +234,33 @@
         <message>
             <source>Enter an angle from %1 to %2°.</source>
             <translation>请输入 %1 到 %2° 的角度。</translation>
+        </message>
+    </context>
+    <context>
+        <name>WindDirectionOffsetDialog</name>
+        <message>
+            <source>Wind direction offset</source>
+            <translation>风向偏移角</translation>
+        </message>
+        <message>
+            <source>Wind direction offset (°)</source>
+            <translation>风向偏移角（°）</translation>
+        </message>
+        <message>
+            <source>Target azimuth = wind-from direction + offset. To put the boom broadside to the wind and let wind pass along the elements, use 90° or 270°.</source>
+            <translation>目标方位 = 来风角 + 偏移角。若要让主梁侧向迎风、使风沿八木振子方向通过，可设为 90° 或 270°。</translation>
+        </message>
+        <message>
+            <source>Cancel</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <source>Save</source>
+            <translation>保存</translation>
+        </message>
+        <message>
+            <source>Could not save the wind direction offset.</source>
+            <translation>无法保存风向偏移角。</translation>
         </message>
     </context>
     <context>
@@ -562,6 +581,10 @@
         <message>
             <source>Wind data source...</source>
             <translation>风向数据源…</translation>
+        </message>
+        <message>
+            <source>Wind direction offset...</source>
+            <translation>风向偏移角…</translation>
         </message>
         <message>
             <source>Settings</source>

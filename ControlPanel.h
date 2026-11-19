@@ -33,7 +33,6 @@ class QLabel;
 class QLineEdit;
 class MotionButtons;
 class QSlider;
-class QSpinBox;
 class QTimer;
 class QWidget;
 
@@ -77,8 +76,6 @@ public:
     void requestAzimuthBearing(int bearing);
     /** @return 已保存的抗风模式状态。 */
     bool windProtectionEnabled() const { return m_windProtectionEnabled; }
-    /** @return 天线方位相对气象风向的偏移角。 */
-    int windDirectionOffset() const { return m_windDirectionOffset; }
     /** @return 最近一次设备方位读数，不包含补偿；供分轴反馈及 W 命令保留机械行程。 */
     int azimuth() const;
     /** @return 当前界面保留的仰角读数。 */
@@ -97,8 +94,6 @@ signals:
     void longPathEnabledChanged(bool enabled);
     /** @brief 用户切换抗风自动定位模式。 */
     void windProtectionEnabledChanged(bool enabled);
-    /** @brief 用户修改目标方位相对风向的偏移角。 */
-    void windDirectionOffsetChanged(int degrees);
 
 private:
     void setupMotionButtons();
@@ -120,7 +115,6 @@ private:
     QLineEdit *m_azimuthInput;
     QLineEdit *m_elevationInput;
     QSlider *m_slider;
-    QSpinBox *m_windDirectionOffsetInput;
     QTimer *m_elevationCommandTimer;
     AnglePresets *m_azimuthPresets;
     AnglePresets *m_elevationPresets;
@@ -134,7 +128,6 @@ private:
     bool m_trackingEnabled = false;
     bool m_longPathEnabled = false;
     bool m_windProtectionEnabled = false;
-    int m_windDirectionOffset = 90;
     int m_windDirection = -1;
     WindWeather::Provider m_windWeatherProvider = WindWeather::Provider::OpenMeteo;
 };

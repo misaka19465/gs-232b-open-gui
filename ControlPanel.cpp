@@ -36,7 +36,6 @@
 #include <QRadioButton>
 #include <QSignalBlocker>
 #include <QSlider>
-#include <QSpinBox>
 #include <QStyle>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -82,11 +81,20 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     auto *tracking = new QRadioButton(tr("Tracking"), mode);
     tracking->setObjectName(QStringLiteral("trackingMode"));
     tracking->setToolTip(tr("Allow bridge apps to control the rotator."));
+    const AppSettings preferences;
+    m_windProtectionEnabled = preferences.windProtectionEnabled();
+    m_windWeatherProvider = preferences.windWeatherProvider();
+    auto *windMode = new QRadioButton(tr("Wind protection"), mode);
+    windMode->setObjectName(QStringLiteral("windProtectionMode"));
+    windMode->setChecked(m_windProtectionEnabled);
+    windMode->setToolTip(
+        tr("Automatically point the antenna using the configured wind direction offset."));
     auto *longPath = new QCheckBox(tr("LP"), mode);
     longPath->setObjectName(QStringLiteral("longPath"));
     longPath->setToolTip(tr("Use long path for grid, callsign or DXCC targets and GridTracker. Direct angles and N1MM targets are unchanged."));
     modeLayout->addWidget(manual);
     modeLayout->addWidget(tracking);
+    modeLayout->addWidget(windMode);
     modeLayout->addWidget(longPath);
     connect(tracking, &QRadioButton::toggled, this, [this](bool enabled) {
         cancelPendingMotion();
@@ -99,31 +107,6 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
         emit longPathEnabledChanged(enabled);
     });
 
-    const AppSettings preferences;
-    m_windProtectionEnabled = preferences.windProtectionEnabled();
-    m_windDirectionOffset = preferences.windDirectionOffset();
-    m_windWeatherProvider = preferences.windWeatherProvider();
-    auto *windMode = new QCheckBox(tr("Wind protection"), mode);
-    windMode->setObjectName(QStringLiteral("windProtectionMode"));
-    windMode->setChecked(m_windProtectionEnabled);
-    windMode->setToolTip(
-        tr("When configured, wind protection takes priority over bridge control and points to wind direction plus the configured offset."));
-    modeLayout->addWidget(windMode);
-
-    auto *windOffsetRow = new QHBoxLayout;
-    windOffsetRow->setContentsMargins(0, 0, 0, 0);
-    auto *windOffsetLabel = new QLabel(tr("Offset"), mode);
-    m_windDirectionOffsetInput = new QSpinBox(mode);
-    m_windDirectionOffsetInput->setObjectName(QStringLiteral("windDirectionOffset"));
-    m_windDirectionOffsetInput->setRange(0, 359);
-    m_windDirectionOffsetInput->setSuffix(QStringLiteral("°"));
-    m_windDirectionOffsetInput->setValue(m_windDirectionOffset);
-    m_windDirectionOffsetInput->setToolTip(tr("Target azimuth = wind-from direction + offset."));
-    windOffsetLabel->setBuddy(m_windDirectionOffsetInput);
-    windOffsetRow->addWidget(windOffsetLabel);
-    windOffsetRow->addWidget(m_windDirectionOffsetInput);
-    modeLayout->addLayout(windOffsetRow);
-
     m_windStatus = new QLabel(mode);
     m_windStatus->setObjectName(QStringLiteral("windDirectionStatus"));
     m_windStatus->setTextFormat(Qt::RichText);
@@ -132,15 +115,10 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_windStatus->setToolTip(tr("Weather data attribution"));
     updateWindStatus();
     modeLayout->addWidget(m_windStatus);
-    connect(windMode, &QCheckBox::toggled, this, [this](bool enabled) {
+    connect(windMode, &QRadioButton::toggled, this, [this](bool enabled) {
         m_windProtectionEnabled = enabled;
         emit windProtectionEnabledChanged(enabled);
     });
-    connect(m_windDirectionOffsetInput, qOverload<int>(&QSpinBox::valueChanged),
-            this, [this](int degrees) {
-                m_windDirectionOffset = degrees;
-                emit windDirectionOffsetChanged(degrees);
-            });
     azimuthColumn->addWidget(mode);
     azimuthColumn->addStretch(1);
     m_azimuth = new QLabel(azimuthControls);

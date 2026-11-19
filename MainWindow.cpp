@@ -35,6 +35,7 @@
 #include "PasswordChangeDialog.h"
 #include "StationGridDialog.h"
 #include "WifiProvisioningDialog.h"
+#include "weather/WindDirectionOffsetDialog.h"
 #include "weather/WindWeatherSettingsDialog.h"
 #include "weather/WindProtectionController.h"
 #include "virtual_serial/VirtualSerialBridge.h"
@@ -121,7 +122,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
                                               weatherSettings.qWeatherApiKey(),
                                               weatherSettings.windWeatherTermsAccepted());
     m_windProtection->setStationGrid(weatherSettings.stationGrid());
-    m_windProtection->setDirectionOffset(m_control->windDirectionOffset());
+    m_windProtection->setDirectionOffset(weatherSettings.windDirectionOffset());
     m_windProtection->setAzimuthOffset(weatherSettings.azimuthOffset());
     m_windProtection->setEnabled(m_control->windProtectionEnabled());
     m_positionPollTimer = new QTimer(this);
@@ -152,12 +153,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
                                  tr("Could not save application settings."));
         m_windProtection->setEnabled(enabled);
         updateBridgeState();
-    });
-    connect(m_control, &ControlPanel::windDirectionOffsetChanged, this, [this](int degrees) {
-        if (!AppSettings().setWindDirectionOffset(degrees))
-            QMessageBox::warning(this, tr("Application settings"),
-                                 tr("Could not save application settings."));
-        m_windProtection->setDirectionOffset(degrees);
     });
     connect(m_windProtection, &WindProtectionController::targetBearingRequested,
             m_control, &ControlPanel::requestAzimuthBearing);
@@ -398,6 +393,9 @@ void MainWindow::createMenus()
     auto *windWeatherSettingsAction = settings->addAction(
         tr("Wind data source..."), this, &MainWindow::openWindWeatherSettings);
     windWeatherSettingsAction->setObjectName(QStringLiteral("windWeatherSettingsAction"));
+    auto *windDirectionOffsetAction = settings->addAction(
+        tr("Wind direction offset..."), this, &MainWindow::openWindDirectionOffset);
+    windDirectionOffsetAction->setObjectName(QStringLiteral("windDirectionOffsetAction"));
     auto *shortestPathAction = settings->addAction(tr("Shortest rotation path"));
     shortestPathAction->setObjectName(QStringLiteral("shortestPathAction"));
     shortestPathAction->setCheckable(true);
@@ -496,6 +494,16 @@ void MainWindow::openWindWeatherSettings()
                                                   settings.qWeatherApiKey(),
                                                   settings.windWeatherTermsAccepted());
         updateBridgeState();
+    });
+    dialog->open();
+}
+
+void MainWindow::openWindDirectionOffset()
+{
+    auto *dialog = new WindDirectionOffsetDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(dialog, &QDialog::accepted, this, [this] {
+        m_windProtection->setDirectionOffset(AppSettings().windDirectionOffset());
     });
     dialog->open();
 }

@@ -176,6 +176,8 @@ set(GUI_SOURCES
     ManagementKeyDialog.h
     PasswordChangeDialog.cpp
     PasswordChangeDialog.h
+    weather/WindDirectionOffsetDialog.cpp
+    weather/WindDirectionOffsetDialog.h
     weather/WindWeatherSettingsDialog.cpp
     weather/WindWeatherSettingsDialog.h
     NetworkPortConfigDialog.cpp
@@ -294,6 +296,7 @@ if(BUILD_TESTING)
         AppSettings.cpp AppSettings.h
         Compass.cpp Compass.h
         GreatCircleMap.cpp GreatCircleMap.h
+        weather/WindDirectionOffsetDialog.cpp weather/WindDirectionOffsetDialog.h
     )
     target_link_libraries(target_control_tests PRIVATE
         gs232b_targeting gs232b_n1mm Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::Test)

@@ -19,10 +19,14 @@
 
 #include "ControlPanel.h"
 #include "AppSettings.h"
+#include "weather/WindDirectionOffsetDialog.h"
 
 #include <QCheckBox>
+#include <QDialog>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QRadioButton>
+#include <QSpinBox>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -41,6 +45,8 @@ private slots:
     void presetTargetsAreSavedWithoutMoving();
     void presetTargetRequiresStationGrid();
     void requestedBearingUsesCompensationAndNearestReachablePosition();
+    void controlModesAreMutuallyExclusive();
+    void windDirectionOffsetDialogPersistsAngle();
     void cancellationDoesNotMove();
     void disablingCancelsPendingInput();
     void elevationRemainsNumeric();
@@ -217,6 +223,69 @@ void TargetControlTests::requestedBearingUsesCompensationAndNearestReachablePosi
     panel.setAzimuthOffset(30);
     panel.requestAzimuthBearing(10);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M340"));
+}
+
+void TargetControlTests::controlModesAreMutuallyExclusive()
+{
+    QVERIFY(AppSettings().setWindProtectionEnabled(false));
+    ControlPanel panel;
+    auto *manual = panel.findChild<QRadioButton *>(QStringLiteral("manualMode"));
+    auto *tracking = panel.findChild<QRadioButton *>(QStringLiteral("trackingMode"));
+    auto *windProtection = panel.findChild<QRadioButton *>(QStringLiteral("windProtectionMode"));
+    QVERIFY(manual);
+    QVERIFY(tracking);
+    QVERIFY(windProtection);
+    QVERIFY(manual->isChecked());
+    QVERIFY(!tracking->isChecked());
+    QVERIFY(!windProtection->isChecked());
+
+    QSignalSpy trackingChanges(&panel, &ControlPanel::trackingEnabledChanged);
+    QSignalSpy windChanges(&panel, &ControlPanel::windProtectionEnabledChanged);
+    tracking->click();
+    QVERIFY(tracking->isChecked());
+    QVERIFY(!manual->isChecked());
+    QVERIFY(!windProtection->isChecked());
+    QVERIFY(panel.trackingEnabled());
+    QVERIFY(!panel.windProtectionEnabled());
+
+    windProtection->click();
+    QVERIFY(!tracking->isChecked());
+    QVERIFY(!manual->isChecked());
+    QVERIFY(windProtection->isChecked());
+    QVERIFY(!panel.trackingEnabled());
+    QVERIFY(panel.windProtectionEnabled());
+
+    manual->click();
+    QVERIFY(manual->isChecked());
+    QVERIFY(!tracking->isChecked());
+    QVERIFY(!windProtection->isChecked());
+    QVERIFY(!panel.trackingEnabled());
+    QVERIFY(!panel.windProtectionEnabled());
+    QCOMPARE(trackingChanges.size(), 2);
+    QCOMPARE(windChanges.size(), 2);
+
+    QVERIFY(AppSettings().setWindProtectionEnabled(true));
+    ControlPanel restoredPanel;
+    QVERIFY(!restoredPanel.findChild<QRadioButton *>(QStringLiteral("manualMode"))->isChecked());
+    QVERIFY(!restoredPanel.findChild<QRadioButton *>(QStringLiteral("trackingMode"))->isChecked());
+    QVERIFY(restoredPanel.findChild<QRadioButton *>(QStringLiteral("windProtectionMode"))
+                ->isChecked());
+    QVERIFY(AppSettings().setWindProtectionEnabled(false));
+}
+
+void TargetControlTests::windDirectionOffsetDialogPersistsAngle()
+{
+    QVERIFY(AppSettings().setWindDirectionOffset(90));
+    WindDirectionOffsetDialog dialog;
+    auto *offset = dialog.findChild<QSpinBox *>(QStringLiteral("windDirectionOffset"));
+    auto *save = dialog.findChild<QPushButton *>(QStringLiteral("saveWindDirectionOffset"));
+    QVERIFY(offset);
+    QVERIFY(save);
+    QCOMPARE(offset->value(), 90);
+    offset->setValue(270);
+    save->click();
+    QCOMPARE(dialog.result(), int(QDialog::Accepted));
+    QCOMPARE(AppSettings().windDirectionOffset(), 270);
 }
 
 void TargetControlTests::cancellationDoesNotMove()

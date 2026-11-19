@@ -92,6 +92,7 @@ private:
     void startApProvisioning();
     void openStationGrid();
     void openWindWeatherSettings();
+    void openWindDirectionOffset();
     void openAzimuthOffset();
     void openAntennaGain();
     void openCalibration();
