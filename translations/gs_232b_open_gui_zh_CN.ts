@@ -2,25 +2,6 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN" sourcelanguage="en_US">
     <context>
-        <name>AngleReading</name>
-        <message>
-            <source>Click to enter an integer angle. Angles wrap at 360°. Press Enter to move or Esc to cancel.</source>
-            <translation>点击输入整数角度，角度按 360° 取余。按回车转动，按 Esc 取消。</translation>
-        </message>
-        <message>
-            <source>Enter an integer angle.</source>
-            <translation>请输入整数角度。</translation>
-        </message>
-        <message>
-            <source>Enter an angle from %1 to %2°.</source>
-            <translation>请输入 %1 到 %2° 之间的角度。</translation>
-        </message>
-        <message>
-            <source>Click to enter an angle (%1–%2°). Press Enter to move or Esc to cancel.</source>
-            <translation>点击输入角度（%1–%2°）。按回车开始转动，按 Esc 取消。</translation>
-        </message>
-    </context>
-    <context>
         <name>Communication::Transport</name>
         <message>
             <source>Serial port is empty</source>
@@ -167,10 +148,6 @@
             <translation>预设</translation>
         </message>
         <message>
-            <source>Click to enter an integer angle, grid, callsign or prefix. Angles wrap at 360° and use the shortest reachable rotation. Callsigns use DXCC coordinates. Press Enter to move or Esc to cancel.</source>
-            <translation>点击输入整数角度、网格、呼号或前缀。角度按 360° 取余，并选择行程内最短的旋转路径。呼号使用所属 DXCC 的代表坐标。按回车转动，按 Esc 取消。</translation>
-        </message>
-        <message>
             <source>Application settings</source>
             <translation>应用设置</translation>
         </message>
@@ -181,10 +158,6 @@
         <message>
             <source>Azimuth angle, grid or callsign</source>
             <translation>方位角、网格或呼号</translation>
-        </message>
-        <message>
-            <source>Click to enter an angle (%1–%2°), grid, callsign or prefix. Callsigns use DXCC coordinates. Press Enter to move or Esc to cancel.</source>
-            <translation>点击输入角度（%1–%2°）、网格、呼号或前缀。呼号使用所属 DXCC 的代表坐标。按回车转动，按 Esc 取消。</translation>
         </message>
         <message>
             <source>Set your grid in Settings → My grid… before using a grid or callsign.</source>
@@ -1208,8 +1181,32 @@ Turn the map off and on to retry</source>
             <translation>编辑仰角预设</translation>
         </message>
         <message>
-            <source>Right-click to edit this preset. Press Enter to save or Esc to cancel.</source>
-            <translation>右键可编辑此预设。按回车保存，按 Esc 取消。</translation>
+            <source>Right-click to edit this preset.</source>
+            <translation>右键可编辑此预设。</translation>
+        </message>
+        <message>
+            <source>Enter an integer angle, grid, callsign or prefix. Callsigns use DXCC coordinates. Press Enter to save or Esc to cancel.</source>
+            <translation>输入整数角度、网格、呼号或前缀。呼号使用所属 DXCC 的代表坐标。按回车保存，按 Esc 取消。</translation>
+        </message>
+        <message>
+            <source>Enter an angle (%1–%2°), grid, callsign or prefix. Callsigns use DXCC coordinates. Press Enter to save or Esc to cancel.</source>
+            <translation>输入角度（%1–%2°）、网格、呼号或前缀。呼号使用所属 DXCC 的代表坐标。按回车保存，按 Esc 取消。</translation>
+        </message>
+        <message>
+            <source>Enter an angle from %1 to %2°. Press Enter to save or Esc to cancel.</source>
+            <translation>请输入 %1 到 %2° 之间的角度。按回车保存，按 Esc 取消。</translation>
+        </message>
+        <message>
+            <source>Enter an integer angle.</source>
+            <translation>请输入整数角度。</translation>
+        </message>
+        <message>
+            <source>Enter an angle from %1 to %2°.</source>
+            <translation>请输入 %1 到 %2° 之间的角度。</translation>
+        </message>
+        <message>
+            <source>Unknown target. Enter a 4, 6 or 8 character grid, callsign or DXCC prefix.</source>
+            <translation>无法识别目标。请输入 4、6 或 8 位网格、呼号或 DXCC 前缀。</translation>
         </message>
         <message>
             <source>Application settings</source>

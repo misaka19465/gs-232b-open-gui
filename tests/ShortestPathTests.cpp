@@ -1,4 +1,3 @@
-#include "AngleReading.h"
 #include "AppSettings.h"
 #include "AzimuthScale.h"
 #include "Compass.h"
@@ -171,8 +170,7 @@ void ShortestPathTests::presetEditingUsesCircularAngles()
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     auto *button = panel.findChild<QPushButton *>(QStringLiteral("azimuthPreset0"));
     button->customContextMenuRequested(QPoint());
-    auto *reading = button->parentWidget()->findChild<AngleReading *>();
-    auto *editor = reading->findChild<QLineEdit *>();
+    auto *editor = button->parentWidget()->findChild<QLineEdit *>(QStringLiteral("azimuthPresetEditor0"));
     QCOMPARE(editor->text().toLongLong(), qint64(60));
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 450);

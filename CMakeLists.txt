@@ -95,8 +95,6 @@ set(GUI_SOURCES
     AntennaGainDialog.h
     AppSettings.cpp
     AppSettings.h
-    AngleReading.cpp
-    AngleReading.h
     AnglePresets.cpp
     AnglePresets.h
     AzimuthScale.h
@@ -253,7 +251,6 @@ if(BUILD_TESTING)
 
     add_executable(target_control_tests
         tests/TargetControlTests.cpp
-        AngleReading.cpp AngleReading.h
         AnglePresets.cpp AnglePresets.h
         ControlPanel.cpp ControlPanel.h
         ControlPanelMotion.cpp
@@ -269,7 +266,6 @@ if(BUILD_TESTING)
 
     add_executable(angle_compensation_tests
         tests/AngleCompensationTests.cpp
-        AngleReading.cpp AngleReading.h
         AnglePresets.cpp AnglePresets.h
         ControlPanel.cpp ControlPanel.h
         ControlPanelMotion.cpp
@@ -286,7 +282,6 @@ if(BUILD_TESTING)
 
     add_executable(shortest_path_tests
         tests/ShortestPathTests.cpp
-        AngleReading.cpp AngleReading.h
         AnglePresets.cpp AnglePresets.h
         ControlPanel.cpp ControlPanel.h
         ControlPanelMotion.cpp
@@ -302,7 +297,6 @@ if(BUILD_TESTING)
 
     add_executable(motion_control_tests
         tests/MotionControlTests.cpp
-        AngleReading.cpp AngleReading.h
         AnglePresets.cpp AnglePresets.h
         ControlPanel.cpp ControlPanel.h ControlPanelMotion.cpp
         MotionButtons.cpp MotionButtons.h

@@ -1,5 +1,4 @@
 #include "AnglePresets.h"
-#include "AngleReading.h"
 #include "AppSettings.h"
 #include "AzimuthScale.h"
 #include "Compass.h"
@@ -29,6 +28,7 @@ private slots:
     void compassAndCallsignTargets();
     void feedbackAndElevationKeepMechanicalPosition();
     void presetsKeepTheirStoredMechanicalAngles();
+    void presetTargetsKeepCompensatedMechanicalPosition();
     void changingOffsetCancelsPendingInputAndMotion();
 
 private:
@@ -232,8 +232,7 @@ void AngleCompensationTests::presetsKeepTheirStoredMechanicalAngles()
     button->click();
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M450"));
     button->customContextMenuRequested(QPoint());
-    auto *reading = button->parentWidget()->findChild<AngleReading *>();
-    auto *editor = reading->findChild<QLineEdit *>();
+    auto *editor = button->parentWidget()->findChild<QLineEdit *>(QStringLiteral("azimuthPresetEditor0"));
     QCOMPARE(editor->text().toLongLong(), qint64(420));
     editor->setText(QStringLiteral("-30"));
     QTest::keyClick(editor, Qt::Key_Return);
@@ -245,6 +244,28 @@ void AngleCompensationTests::presetsKeepTheirStoredMechanicalAngles()
     button->customContextMenuRequested(QPoint());
     QCOMPARE(editor->text().toLongLong(), qint64(30));
     QTest::keyClick(editor, Qt::Key_Escape);
+}
+
+void AngleCompensationTests::presetTargetsKeepCompensatedMechanicalPosition()
+{
+    QVERIFY(AppSettings().setShortestPathEnabled(true));
+    QVERIFY(AppSettings().setPresetAngle(AppSettings::Axis::Azimuth, 0, 450));
+    QVERIFY(AppSettings().setAzimuthOffset(-30));
+    ControlPanel panel;
+    panel.setStationGrid(QStringLiteral("PM95AA"));
+    panel.setCommandEnabled(true);
+    panel.setPosition(450, 20);
+    panel.show();
+    QSignalSpy commands(&panel, &ControlPanel::commandRequested);
+    auto *button = panel.findChild<QPushButton *>(QStringLiteral("azimuthPreset0"));
+    auto *editor = panel.findChild<QLineEdit *>(QStringLiteral("azimuthPresetEditor0"));
+    button->customContextMenuRequested(QPoint());
+    editor->setText(QStringLiteral("JA"));
+    QTest::keyClick(editor, Qt::Key_Return);
+    QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 401);
+    QVERIFY(commands.isEmpty());
+    button->click();
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M401"));
 }
 
 void AngleCompensationTests::changingOffsetCancelsPendingInputAndMotion()

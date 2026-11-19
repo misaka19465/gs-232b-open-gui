@@ -1,6 +1,9 @@
 #include "ControlPanel.h"
+#include "AppSettings.h"
 
+#include <QCheckBox>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -16,6 +19,8 @@ private slots:
     void submitsTargets();
     void rejectedInputCanBeCorrected();
     void stationGridChangesTakeEffect();
+    void presetTargetsAreSavedWithoutMoving();
+    void presetTargetRequiresStationGrid();
     void cancellationDoesNotMove();
     void disablingCancelsPendingInput();
     void elevationRemainsNumeric();
@@ -120,6 +125,62 @@ void TargetControlTests::stationGridChangesTakeEffect()
     editor->setText(QStringLiteral("360"));
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M000"));
+}
+
+void TargetControlTests::presetTargetsAreSavedWithoutMoving()
+{
+    QVERIFY(AppSettings().setShortestPathEnabled(true));
+    QVERIFY(AppSettings().setAzimuthOffset(0));
+    QVERIFY(AppSettings().setPresetAngle(AppSettings::Axis::Azimuth, 0, 0));
+    ControlPanel panel;
+    panel.setStationGrid(QStringLiteral("PM95AA"));
+    panel.setCommandEnabled(true);
+    panel.setPosition(0, 20);
+    panel.show();
+    QSignalSpy commands(&panel, &ControlPanel::commandRequested);
+    auto *button = panel.findChild<QPushButton *>(QStringLiteral("azimuthPreset0"));
+    auto *editor = panel.findChild<QLineEdit *>(QStringLiteral("azimuthPresetEditor0"));
+
+    button->customContextMenuRequested(QPoint());
+    editor->setText(QStringLiteral("FN31"));
+    QTest::keyClick(editor, Qt::Key_Return);
+    QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 23);
+    QVERIFY(commands.isEmpty());
+    button->click();
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M023"));
+
+    button->customContextMenuRequested(QPoint());
+    editor->setText(QStringLiteral("ja1abc"));
+    QTest::keyClick(editor, Qt::Key_Return);
+    QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 11);
+    QVERIFY(commands.isEmpty());
+    panel.findChild<QCheckBox *>(QStringLiteral("longPath"))->setChecked(true);
+    button->customContextMenuRequested(QPoint());
+    editor->setText(QStringLiteral("JA"));
+    QTest::keyClick(editor, Qt::Key_Return);
+    QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 191);
+    QVERIFY(commands.isEmpty());
+    button->click();
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M191"));
+}
+
+void TargetControlTests::presetTargetRequiresStationGrid()
+{
+    QVERIFY(AppSettings().setShortestPathEnabled(true));
+    QVERIFY(AppSettings().setPresetAngle(AppSettings::Axis::Azimuth, 0, 45));
+    ControlPanel panel;
+    panel.show();
+    QSignalSpy commands(&panel, &ControlPanel::commandRequested);
+    QSignalSpy errors(&panel, &ControlPanel::inputError);
+    auto *button = panel.findChild<QPushButton *>(QStringLiteral("azimuthPreset0"));
+    auto *editor = panel.findChild<QLineEdit *>(QStringLiteral("azimuthPresetEditor0"));
+    button->customContextMenuRequested(QPoint());
+    editor->setText(QStringLiteral("JA"));
+    QTest::keyClick(editor, Qt::Key_Return);
+    QVERIFY(commands.isEmpty());
+    QCOMPARE(errors.size(), 1);
+    QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 45);
+    QVERIFY(editor->isVisible());
 }
 
 void TargetControlTests::cancellationDoesNotMove()

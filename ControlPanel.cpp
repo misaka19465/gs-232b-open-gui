@@ -102,6 +102,11 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     auto *azimuthPresetGroup = new QGroupBox(tr("Presets"), controls);
     auto *azimuthPresetLayout = new QVBoxLayout(azimuthPresetGroup);
     m_azimuthPresets = new AnglePresets(AppSettings::Axis::Azimuth, azimuthPresetGroup);
+    m_azimuthPresets->setTargetResolver([this](const QString &text) {
+        QString error;
+        return AnglePresets::TargetInputResult{resolveTargetBearing(text, error), error};
+    });
+    connect(m_azimuthPresets, &AnglePresets::inputRejected, this, &ControlPanel::inputError);
     azimuthPresetLayout->addWidget(m_azimuthPresets);
     layout->addWidget(azimuthPresetGroup, 1);
 
@@ -161,6 +166,7 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     layout->addWidget(m_elevationControls, 2);
 
     connect(m_elevationPresets, &AnglePresets::angleRequested, this, &ControlPanel::requestElevation);
+    connect(m_elevationPresets, &AnglePresets::inputRejected, this, &ControlPanel::inputError);
 
     connect(m_slider, &QSlider::valueChanged, this, [this] {
         if (m_commandEnabled && m_elevationSupported)
@@ -256,27 +262,36 @@ void ControlPanel::submitAzimuthInput()
         return;
     }
 
+    QString error;
+    const auto bearing = resolveTargetBearing(text, error);
+    if (!bearing) {
+        emit inputError(error);
+        return;
+    }
+    requestAzimuth(m_azimuthScale.mechanicalBearing(*bearing, m_azimuthValue));
+}
+
+std::optional<int> ControlPanel::resolveTargetBearing(const QString &text, QString &error) const
+{
     const auto result = TargetBearing::calculate(m_stationGrid, text);
     if (!result.solution) {
         switch (result.error) {
         case TargetBearing::Error::InvalidStationGrid:
-            emit inputError(tr("Set your grid in Settings → My grid… before using a grid or callsign."));
-            return;
+            error = tr("Set your grid in Settings → My grid… before using a grid or callsign.");
+            break;
         case TargetBearing::Error::UndefinedBearing:
-            emit inputError(tr("This target has no unique bearing from your grid."));
-            return;
+            error = tr("This target has no unique bearing from your grid.");
+            break;
         case TargetBearing::Error::UnknownTarget:
         case TargetBearing::Error::None:
-            emit inputError(tr("Unknown target. Enter a 4, 6 or 8 character grid, callsign or DXCC prefix."));
-            return;
+            error = tr("Unknown target. Enter a 4, 6 or 8 character grid, callsign or DXCC prefix.");
+            break;
         }
+        return std::nullopt;
     }
 
-    // NOTE: LP 只反转网格及 DXCC 算出的方位；数字输入、预设和罗盘选角不经过此解析器。
     const int shortBearing = result.solution->roundedDegrees();
-    const int bearing = m_longPathEnabled ? AzimuthScale::normalized(shortBearing + 180)
-                                         : shortBearing;
-    requestAzimuth(m_azimuthScale.mechanicalBearing(bearing, m_azimuthValue));
+    return m_longPathEnabled ? AzimuthScale::normalized(shortBearing + 180) : shortBearing;
 }
 
 void ControlPanel::submitElevationInput()

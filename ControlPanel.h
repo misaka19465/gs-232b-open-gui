@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <QString>
 
+#include <optional>
+
 class AnglePresets;
 class Compass;
 class QLabel;
@@ -70,6 +72,7 @@ private:
     void submitAzimuthInput();
     void submitElevationInput();
     void updateAzimuthInput();
+    std::optional<int> resolveTargetBearing(const QString &text, QString &error) const;
 
     Compass *m_compass;
     QWidget *m_elevationControls;
