@@ -169,6 +169,11 @@ void ControlPanel::setElevationSupported(bool supported)
     setCommandEnabled(m_commandEnabled);
 }
 
+bool ControlPanel::elevationSupported() const
+{
+    return m_elevationSupported;
+}
+
 void ControlPanel::setShortestPathEnabled(bool enabled)
 {
     m_shortestPathEnabled = enabled;

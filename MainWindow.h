@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include <QMainWindow>
 #include <QPointer>
+#include <QSize>
 #include <QString>
 
 #include <functional>
@@ -18,6 +19,8 @@ class GridTrackerController;
 class QLabel;
 class ManagementKeyDialog;
 class QMenu;
+class QCloseEvent;
+class QResizeEvent;
 class RotorModelDialog;
 class QShowEvent;
 class QTimer;
@@ -43,6 +46,9 @@ public:
 
 private:
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void saveWindowSize(bool warnOnFailure);
     void openConnectionDialog();
     void createMenus();
     void createViewMenu();
@@ -76,6 +82,7 @@ private:
     void openFirmwareUpgrade();
     void openAbout();
     void setupRotorModel();
+    void setElevationSupported(bool supported);
     void openRotorModel();
     void updateRotorModelState();
     void applyRotorModel(int modelId);
@@ -154,6 +161,9 @@ private:
     QTimer *m_calibrationTimeoutTimer;
     QTimer *m_rotorModelTimeoutTimer;
     int m_wifiTrialPollCount = 0;
+    QSize m_persistedWindowSize;
+    bool m_windowSizeRestored = false;
+    bool m_windowSizeSaved = false;
 
     enum class NetworkConfigurationStage {
         Idle,

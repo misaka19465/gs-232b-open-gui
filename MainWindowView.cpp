@@ -60,6 +60,22 @@ void MainWindow::createViewMenu()
     });
 }
 
+void MainWindow::setElevationSupported(bool supported)
+{
+    if (m_control->elevationSupported() == supported)
+        return;
+
+    const int controlWidth = m_control->width();
+    m_control->setElevationSupported(supported);
+    centralWidget()->layout()->activate();
+    layout()->activate();
+    if (!m_windowSizeRestored || isMaximized() || isFullScreen())
+        return;
+
+    const int widthAdjustment = supported ? controlWidth : -(controlWidth / 2);
+    resize(width() + widthAdjustment, height());
+}
+
 void MainWindow::setAlwaysOnTop(bool enabled)
 {
     if (windowFlags().testFlag(Qt::WindowStaysOnTopHint) == enabled)

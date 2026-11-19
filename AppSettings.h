@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QSize>
 #include <QSettings>
 #include <QStringList>
 
@@ -41,6 +42,10 @@ public:
     bool consoleVisible() const;
     /** @return 立即同步控制台显示偏好到存储是否成功。 */
     bool setConsoleVisible(bool visible);
+    /** @brief 读取窗口基础尺寸；不含仰角区和控制台，缺失或无效时返回默认尺寸。 */
+    QSize windowSize() const;
+    /** @return 尺寸有效且立即同步到存储成功时返回 true；非法尺寸不写入。 */
+    bool setWindowSize(const QSize &size);
 
     /** @brief 读取窗口置顶偏好；缺失或无效时默认关闭。 */
     bool alwaysOnTop() const;

@@ -12,6 +12,7 @@ const QString BaudRateKey = QStringLiteral("connection/baudRate");
 const QString ConnectionAddressKey = QStringLiteral("connection/address");
 const QString NetworkModeKey = QStringLiteral("connection/networkMode");
 const QString ConsoleVisibleKey = QStringLiteral("view/consoleVisible");
+const QString WindowSizeKey = QStringLiteral("view/windowSize");
 const QString AlwaysOnTopKey = QStringLiteral("view/alwaysOnTop");
 const QString GreatCircleMapEnabledKey = QStringLiteral("view/greatCircleMapEnabled");
 const QString AntennaGainKey = QStringLiteral("view/antennaGain");
@@ -37,6 +38,13 @@ bool readBoolean(const QVariant &stored, bool fallback = false)
     if (value.compare(QStringLiteral("false"), Qt::CaseInsensitive) == 0 || value == QStringLiteral("0"))
         return false;
     return fallback;
+}
+
+bool isValidWindowSize(const QSize &size)
+{
+    constexpr int maximumDimension = 32768;
+    return size.width() > 0 && size.height() > 0 &&
+           size.width() <= maximumDimension && size.height() <= maximumDimension;
 }
 
 QString presetKey(AppSettings::Axis axis, int index)
@@ -126,6 +134,17 @@ bool AppSettings::consoleVisible() const
 bool AppSettings::setConsoleVisible(bool visible)
 {
     return storeValue(ConsoleVisibleKey, visible);
+}
+
+QSize AppSettings::windowSize() const
+{
+    const QSize size = m_settings.value(WindowSizeKey).toSize();
+    return isValidWindowSize(size) ? size : QSize(1280, 360);
+}
+
+bool AppSettings::setWindowSize(const QSize &size)
+{
+    return isValidWindowSize(size) && storeValue(WindowSizeKey, size);
 }
 
 bool AppSettings::alwaysOnTop() const

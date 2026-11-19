@@ -23,6 +23,7 @@
 
 #include <QActionGroup>
 #include <QApplication>
+#include <QCloseEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QJsonDocument>
@@ -35,6 +36,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QRegularExpression>
+#include <QResizeEvent>
 #include <QSerialPortInfo>
 #include <QSignalBlocker>
 #include <QStatusBar>
@@ -68,6 +70,7 @@ QString managementAuthCommand(const QString &password)
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+    m_persistedWindowSize = AppSettings().windowSize();
     setObjectName(QStringLiteral("mainWindow"));
     setWindowTitle(tr("GS-232B Open Control"));
     setMinimumWidth(860);
@@ -214,6 +217,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
             m_positionPollTimer->start();
     });
     updateConnectionState();
+    const int consoleHeight = m_console->isHidden()
+                                  ? 0
+                                  : m_console->height() + centralWidget()->layout()->spacing();
+    resize(m_persistedWindowSize.width(), m_persistedWindowSize.height() + consoleHeight);
+    m_windowSizeRestored = true;
+    connect(qApp, &QCoreApplication::aboutToQuit, this,
+            [this] { saveWindowSize(false); });
 }
 
 MainWindow::~MainWindow()
@@ -227,6 +237,53 @@ MainWindow::~MainWindow()
     const QSignalBlocker virtualSerialBlocker(m_virtualSerial);
     m_transport->close();
     m_virtualSerial->stop();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    if (!m_windowSizeRestored || isMaximized() || isFullScreen())
+        return;
+
+    int widthWithoutElevation = event->size().width();
+    if (m_control->elevationSupported()) {
+        const QMargins margins = centralWidget()->layout()->contentsMargins();
+        widthWithoutElevation -=
+            (event->size().width() - margins.left() - margins.right()) / 2;
+    }
+    int heightWithoutConsole = event->size().height();
+    if (!m_console->isHidden())
+        heightWithoutConsole -= m_console->height() + centralWidget()->layout()->spacing();
+    const QSize size(widthWithoutElevation, heightWithoutConsole);
+    if (m_persistedWindowSize != size)
+        m_windowSizeSaved = false;
+    m_persistedWindowSize = size;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    saveWindowSize(true);
+    QMainWindow::closeEvent(event);
+}
+
+void MainWindow::saveWindowSize(bool warnOnFailure)
+{
+    if (m_windowSizeSaved)
+        return;
+
+    if (!isMaximized() && !isFullScreen()) {
+        int widthWithoutElevation = width();
+        if (m_control->elevationSupported())
+            widthWithoutElevation -= m_control->width() / 2;
+        int heightWithoutConsole = height();
+        if (!m_console->isHidden())
+            heightWithoutConsole -= m_console->height() + centralWidget()->layout()->spacing();
+        m_persistedWindowSize = QSize(widthWithoutElevation, heightWithoutConsole);
+    }
+    m_windowSizeSaved = AppSettings().setWindowSize(m_persistedWindowSize);
+    if (!m_windowSizeSaved && warnOnFailure)
+        QMessageBox::warning(this, tr("Application settings"),
+                             tr("Could not save application settings."));
 }
 
 void MainWindow::setupVirtualSerial()
@@ -269,7 +326,7 @@ void MainWindow::createMenus()
             openConnectionDialog();
     });
     auto *files = menuBar()->addMenu(tr("Files"));
-    files->addAction(tr("Exit"), qApp, &QCoreApplication::quit);
+    files->addAction(tr("Exit"), this, &QWidget::close);
     createViewMenu();
     const AppSettings preferences;
     m_control->setAntennaGain(preferences.antennaGain());

@@ -16,6 +16,8 @@ private slots:
     void defaultsDoNotWrite();
     void savesImmediatelyAndPreservesOtherKeys();
     void persistsConnectionPreferences();
+    void persistsWindowSize();
+    void rejectsInvalidWindowSizes();
     void restoresSerialPortFromScan();
     void invalidConnectionPreferencesUseDefaults_data();
     void invalidConnectionPreferencesUseDefaults();
@@ -53,6 +55,7 @@ void AppSettingsTests::defaultsDoNotWrite()
     QCOMPARE(settings.connectionAddress(), QStringLiteral("192.168.1.50"));
     QVERIFY(!settings.networkMode());
     QVERIFY(!settings.consoleVisible());
+    QCOMPARE(settings.windowSize(), QSize(1280, 360));
     QVERIFY(!settings.alwaysOnTop());
     QVERIFY(!settings.greatCircleMapEnabled());
     QCOMPARE(settings.antennaGain(), 0.0);
@@ -140,6 +143,34 @@ void AppSettingsTests::persistsConnectionPreferences()
     }
     QVERIFY(settings.setConnectionAddress(QString()));
     QVERIFY(AppSettings(fileName).connectionAddress().isEmpty());
+}
+
+void AppSettingsTests::persistsWindowSize()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    const QSize expected(1440, 720);
+    QVERIFY(settings.setWindowSize(expected));
+    QCOMPARE(AppSettings(fileName).windowSize(), expected);
+}
+
+void AppSettingsTests::rejectsInvalidWindowSizes()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    QVERIFY(!settings.setWindowSize(QSize(0, 360)));
+    QVERIFY(!settings.setWindowSize(QSize(1280, 0)));
+    QVERIFY(!settings.setWindowSize(QSize(32769, 360)));
+    QCOMPARE(settings.windowSize(), QSize(1280, 360));
+
+    QSettings raw(fileName, QSettings::IniFormat);
+    raw.setValue(QStringLiteral("view/windowSize"), QSize(-1, 360));
+    raw.sync();
+    QCOMPARE(AppSettings(fileName).windowSize(), QSize(1280, 360));
 }
 
 void AppSettingsTests::restoresSerialPortFromScan()

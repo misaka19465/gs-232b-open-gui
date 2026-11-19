@@ -11,6 +11,7 @@
 | 网络连接地址 | `connection/address` | 默认 `192.168.1.50`；保存时去除首尾空白，保留 IP、主机名、端口或 WebSocket URL 的输入形式；空地址也可保存，地址有效性在连接时校验 |
 | 连接模式 | `connection/networkMode` | 默认串口；布尔值校验与控制台显示一致，开启表示网络模式 |
 | 控制台显示 | `view/consoleVisible` | 默认隐藏；接受布尔值及 `true`/`false`、`1`/`0`，其余值按隐藏处理 |
+| 窗口基础尺寸 | `view/windowSize` | 默认 `1280×360`；保存主控制区尺寸，不含仰角区和控制台；应用退出时保存，恢复时按显示的功能区补足尺寸 |
 | 窗口置顶 | `view/alwaysOnTop` | 默认关闭；布尔值校验与控制台显示一致 |
 | 罗盘大圆图 | `view/greatCircleMapEnabled` | 默认关闭；布尔值校验与控制台显示一致 |
 | 天线增益 | `view/antennaGain` | 默认 `0 dBi`；保存范围 `0–60 dBi`，0 表示不显示参考波瓣，数值只用于大圆图的简单主瓣宽度估算 |

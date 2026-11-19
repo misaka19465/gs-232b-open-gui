@@ -23,6 +23,8 @@ public:
     explicit ControlPanel(QWidget *parent = nullptr);
     /** @brief 按设备确认的型号显示仰角区；隐藏时取消待提交的仰角操作。 */
     void setElevationSupported(bool supported);
+    /** @return 设备型号是否支持并显示仰角区。 */
+    bool elevationSupported() const;
     /** @brief 按实际连接、透传及校准状态统一切换命令控件。 */
     void setCommandEnabled(bool enabled);
     /** @brief 取消待发滑条命令并停止正在点动的轴；定位、停止或断开前调用。 */
