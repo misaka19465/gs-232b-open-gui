@@ -75,8 +75,8 @@
 
 新增偏好时，在 `AppSettings` 中增加明确类型的读写接口，并集中定义存储键、默认值和合法范围；使用方不直接操作 `QSettings` 或通过控件名称推导存储键。先恢复界面状态，再连接用户操作的保存逻辑，避免启动时回写默认值。持久化测试使用临时目录，验证存储契约，不固定界面布局或文字。
 
-通过“桥接 → N1MM Logger+… → 启用”接收同机 N1MM 的旋转器命令，“配置名称…”修改名称并立即保存、生效。接入和名称的设置、通信约定与使用步骤见 [N1MM Logger+ 接入](n1mm-integration.md)。
+通过“外部 → N1MM Logger+… → 启用”接收同机 N1MM 的旋转器命令，“配置名称…”修改名称并立即保存、生效。接入和名称的设置、通信约定与使用步骤见 [N1MM Logger+ 接入](n1mm-integration.md)。
 
-通过“桥接 → GridTracker… → 启用”接收同机 GridTracker 的旋转器定位，并为 GridTracker 2 回复实测位置。使用 CatRotator / PstRotator 协议，配置和通信约定见 [GridTracker 接入](gridtracker-integration.md)。
+通过“外部 → GridTracker… → 启用”接收同机 GridTracker 的旋转器定位，并为 GridTracker 2 回复实测位置。使用 CatRotator / PstRotator 协议，配置和通信约定见 [GridTracker 接入](gridtracker-integration.md)。
 
-通过“桥接 → WSJT-X / JTDX… → 启用”跟踪当前选中的 DX 目标。配置与报文范围见 [WSJT-X/JTDX 接入](wsjtx-integration.md)。
+通过“外部 → WSJT-X / JTDX… → 启用”跟踪当前选中的 DX 目标。配置与报文范围见 [WSJT-X/JTDX 接入](wsjtx-integration.md)。

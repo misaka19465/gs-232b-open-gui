@@ -668,7 +668,7 @@
         <message>
             <location filename="../MainWindow.cpp" line="76" />
             <source>Bridge</source>
-            <translation>桥接</translation>
+            <translation>外部</translation>
         </message>
         <message>
             <location filename="../MainWindow.cpp" line="77" />
