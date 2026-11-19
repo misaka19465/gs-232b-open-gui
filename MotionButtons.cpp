@@ -95,13 +95,15 @@ MotionButtons::MotionButtons(Qt::Orientation orientation, QWidget *parent) : QWi
                                   this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
-    const auto addButton = [this, layout](Symbol symbol, const QString &name,
-                                          const QString &hint) {
+    const auto addButton = [this, layout, vertical](Symbol symbol, const QString &name,
+                                                   const QString &hint) {
         auto *button = new QToolButton(this);
         button->setObjectName(name);
         button->setIcon(motionIcon(symbol, palette()));
         button->setIconSize(QSize(24, 24));
         button->setMinimumSize(34, 34);
+        if (!vertical)
+            button->setMaximumWidth(48);
         button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         button->setAccessibleName(hint);
         button->setToolTip(hint);

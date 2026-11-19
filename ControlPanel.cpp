@@ -28,6 +28,7 @@
 #include <QCheckBox>
 #include <QFrame>
 #include <QFontMetrics>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -73,7 +74,7 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     azimuthColumn->setContentsMargins(0, 0, 0, 0);
     auto *mode = new QGroupBox(tr("Mode"), azimuthControls);
     mode->setObjectName(QStringLiteral("controlMode"));
-    auto *modeLayout = new QVBoxLayout(mode);
+    auto *modeLayout = new QGridLayout(mode);
     auto *manual = new QRadioButton(tr("Manual"), mode);
     manual->setObjectName(QStringLiteral("manualMode"));
     manual->setToolTip(tr("Ignore control commands from bridge apps and continue reporting measured positions."));
@@ -92,10 +93,10 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     auto *longPath = new QCheckBox(tr("LP"), mode);
     longPath->setObjectName(QStringLiteral("longPath"));
     longPath->setToolTip(tr("Use long path for grid, callsign or DXCC targets and GridTracker. Direct angles and N1MM targets are unchanged."));
-    modeLayout->addWidget(manual);
-    modeLayout->addWidget(tracking);
-    modeLayout->addWidget(windMode);
-    modeLayout->addWidget(longPath);
+    modeLayout->addWidget(manual, 0, 0);
+    modeLayout->addWidget(tracking, 0, 1);
+    modeLayout->addWidget(windMode, 1, 0);
+    modeLayout->addWidget(longPath, 1, 1);
     connect(tracking, &QRadioButton::toggled, this, [this](bool enabled) {
         cancelPendingMotion();
         m_trackingEnabled = enabled;
@@ -113,12 +114,15 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_windStatus->setTextInteractionFlags(Qt::TextBrowserInteraction);
     m_windStatus->setOpenExternalLinks(true);
     m_windStatus->setToolTip(tr("Weather data attribution"));
+    m_windStatus->setWordWrap(true);
+    m_windStatus->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
     updateWindStatus();
-    modeLayout->addWidget(m_windStatus);
+    modeLayout->addWidget(m_windStatus, 2, 0, 1, 2);
     connect(windMode, &QRadioButton::toggled, this, [this](bool enabled) {
         m_windProtectionEnabled = enabled;
         emit windProtectionEnabledChanged(enabled);
     });
+    azimuthControls->setMaximumWidth(mode->sizeHint().width());
     azimuthColumn->addWidget(mode);
     azimuthColumn->addStretch(1);
     m_azimuth = new QLabel(azimuthControls);
