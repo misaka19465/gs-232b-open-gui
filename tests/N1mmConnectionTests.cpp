@@ -195,12 +195,12 @@ void N1mmConnectionTests::forwardsCommandsAndReportsOnlyMeasurements()
     QTRY_COMPARE(received.size(), 1);
     QVERIFY(!m_receiver.hasPendingDatagrams());
     m_peer->sendTextMessage(QStringLiteral("0 EL=020\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     send(turn());
     QTRY_VERIFY(m_commands.contains(QStringLiteral("M370\r")));
     QVERIFY(!m_receiver.hasPendingDatagrams());
     m_peer->sendTextMessage(QStringLiteral("AZ=370 EL=020\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@10"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@100"));
     send(stop());
     QTRY_VERIFY(m_commands.contains(QStringLiteral("A\r")));
     m_peer->sendTextMessage(QStringLiteral("EL=030\r\n"));
@@ -218,7 +218,7 @@ void N1mmConnectionTests::rejectsCommandsBeforeFeedbackAndAfterReconnect()
     QTRY_COMPARE(errors.size(), 1);
     QVERIFY(!m_commands.contains(QStringLiteral("M010\r")));
     m_peer->sendTextMessage(QStringLiteral("AZ=350 EL=000\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     m_connection->disconnectRequested();
     QTRY_VERIFY(!m_connection->isConnected());
     QVERIFY(!m_receiver.hasPendingDatagrams());
@@ -228,7 +228,7 @@ void N1mmConnectionTests::rejectsCommandsBeforeFeedbackAndAfterReconnect()
     QTRY_COMPARE(errors.size(), 2);
     QVERIFY(!m_commands.contains(QStringLiteral("M370\r")));
     m_peer->sendTextMessage(QStringLiteral("AZ=350\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     send(turn());
     QTRY_VERIFY(m_commands.contains(QStringLiteral("M370\r")));
 }
@@ -239,14 +239,14 @@ void N1mmConnectionTests::appliesCompensationAndRenamesImmediately()
     QVERIFY(connectDevice());
     m_controller->setAzimuthOffset(30);
     m_peer->sendTextMessage(QStringLiteral("AZ=350 EL=020\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@20"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@200"));
     m_window->findChild<QAction *>(QStringLiteral("n1mmNameAction"))->trigger();
     auto *dialog = m_window->findChild<N1mmNameDialog *>();
     QVERIFY(dialog);
     dialog->findChild<QLineEdit *>(QStringLiteral("n1mmRotorName"))->setText(QStringLiteral("Tower A"));
     dialog->findChild<QPushButton *>(QStringLiteral("saveN1mmRotorName"))->click();
     QCOMPARE(AppSettings().n1mmRotorName(), QStringLiteral("Tower A"));
-    QCOMPARE(receivePosition(), QByteArray("Tower A@20"));
+    QCOMPARE(receivePosition(), QByteArray("Tower A@200"));
     send(turn());
     send(turn("Tower A"));
     send(stop("Tower A"));
@@ -270,7 +270,7 @@ void N1mmConnectionTests::pausesDuringCalibration()
     enable();
     QVERIFY(connectDevice());
     m_peer->sendTextMessage(QStringLiteral("AZ=350 EL=000\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     m_window->findChild<QAction *>(QStringLiteral("calibrationAction"))->trigger();
     auto *dialog = m_window->findChild<CalibrationDialog *>();
     QVERIFY(dialog);
@@ -305,7 +305,7 @@ void N1mmConnectionTests::pausesDuringCalibration()
     send(turn());
     QTRY_COMPARE(errors.size(), 1);
     m_peer->sendTextMessage(QStringLiteral("AZ=350\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     send(turn());
     QTRY_COMPARE(m_commands.count(QStringLiteral("M370\r")), 1);
 }
@@ -327,7 +327,7 @@ void N1mmConnectionTests::ignoresVirtualComMode()
     enable();
     QVERIFY(connectDevice());
     m_peer->sendTextMessage(QStringLiteral("AZ=350\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     m_window->findChild<QCheckBox *>(QStringLiteral("virtualCom"))->setChecked(true);
     send(turn());
     send(stop());
@@ -366,7 +366,7 @@ void N1mmConnectionTests::manualModeReportsPositionAndDropsControl()
     QVERIFY(commands.isEmpty());
     QVERIFY(errors.isEmpty());
     m_peer->sendTextMessage(QStringLiteral("AZ=350 EL=020\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     send(turn());
     send(stop());
     tracking->setChecked(true);
@@ -381,7 +381,7 @@ void N1mmConnectionTests::manualModeReportsPositionAndDropsControl()
     send(turn());
     send(stop());
     m_peer->sendTextMessage(QStringLiteral("AZ=370\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@10"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@100"));
     QTest::qWait(30);
     QCOMPARE(commands.size(), 2);
 }
@@ -391,7 +391,7 @@ void N1mmConnectionTests::longPathDoesNotChangeN1mmTargets()
     enable();
     QVERIFY(connectDevice());
     m_peer->sendTextMessage(QStringLiteral("AZ=350 EL=020\r\n"));
-    QCOMPARE(receivePosition(), QByteArray("GS232B@350"));
+    QCOMPARE(receivePosition(), QByteArray("GS232B@3500"));
     auto *longPath = m_window->findChild<QCheckBox *>(QStringLiteral("longPath"));
     longPath->setChecked(true);
     send(turn());

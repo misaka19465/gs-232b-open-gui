@@ -148,7 +148,7 @@ void N1mmController::reportPosition()
     if (!isEnabled() || !hasFreshPosition())
         return;
     const int heading = AzimuthScale::normalized(AzimuthScale(m_offset).corrected(m_position));
-    const QByteArray packet = (m_rotorName + QLatin1Char('@') + QString::number(heading)).toUtf8();
+    const QByteArray packet = (m_rotorName + QLatin1Char('@') + QString::number(heading * 10)).toUtf8();
     if (m_socket.writeDatagram(packet, QHostAddress::LocalHost, N1mm::ReportingPort) != packet.size()) {
         m_error = tr("Could not report the rotator position to N1MM Logger+: %1")
                       .arg(m_socket.errorString());
