@@ -1,4 +1,3 @@
-#include "AngleReading.h"
 #include "ControlPanel.h"
 
 #include <QLineEdit>
@@ -27,12 +26,11 @@ private:
 
 namespace {
 
-QLineEdit *edit(AngleReading *reading, const QString &text)
+QLineEdit *edit(ControlPanel &panel, const QString &objectName, const QString &text)
 {
-    QCoreApplication::processEvents();
-    reading->beginEditing();
-    auto *editor = reading->findChild<QLineEdit *>();
+    auto *editor = panel.findChild<QLineEdit *>(objectName);
     editor->setText(text);
+    editor->setFocus();
     return editor;
 }
 
@@ -69,8 +67,7 @@ void TargetControlTests::submitsTargets()
     panel.setCommandEnabled(true);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(reading, input);
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), input);
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(commands.size(), 1);
     QCOMPARE(commands.first().first().toString(), command);
@@ -84,15 +81,15 @@ void TargetControlTests::rejectedInputCanBeCorrected()
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     QSignalSpy errors(&panel, &ControlPanel::inputError);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
+    auto *editor = panel.findChild<QLineEdit *>(QStringLiteral("azimuthInput"));
     for (const QString input : {QString(), QStringLiteral("Q1ABC"), QStringLiteral("9223372036854775808"),
                                QStringLiteral("PM95AA"), QStringLiteral("JA1ABC/MM")}) {
-        auto *editor = edit(reading, input);
+        editor->setText(input);
         QTest::keyClick(editor, Qt::Key_Return);
         QVERIFY(commands.isEmpty());
         QCOMPARE(errors.size(), 1);
         QVERIFY(!errors.takeFirst().first().toString().isEmpty());
-        QVERIFY(editor->hasFocus());
+        QCOMPARE(editor->text(), input);
         editor->setText(QStringLiteral("JA"));
         QTest::keyClick(editor, Qt::Key_Return);
         QCOMPARE(commands.size(), 1);
@@ -106,19 +103,18 @@ void TargetControlTests::stationGridChangesTakeEffect()
     panel.setCommandEnabled(true);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(reading, QStringLiteral("JA"));
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA"));
     QTest::keyClick(editor, Qt::Key_Return);
     QVERIFY(commands.isEmpty());
     panel.setStationGrid(QStringLiteral("PM95AA"));
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M011"));
-    editor = edit(reading, QStringLiteral("PM95AA"));
+    editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("PM95AA"));
     panel.setStationGrid(QStringLiteral("FN31"));
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M335"));
     panel.setStationGrid({});
-    editor = edit(reading, QStringLiteral("JA"));
+    editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA"));
     QTest::keyClick(editor, Qt::Key_Return);
     QVERIFY(commands.isEmpty());
     editor->setText(QStringLiteral("360"));
@@ -133,12 +129,11 @@ void TargetControlTests::cancellationDoesNotMove()
     panel.setCommandEnabled(true);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    QTest::keyClick(edit(reading, QStringLiteral("JA")), Qt::Key_Escape);
+    auto *input = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA"));
+    QTest::keyClick(input, Qt::Key_Escape);
     QVERIFY(commands.isEmpty());
-    edit(reading, QStringLiteral("JA"));
-    auto *elevation = panel.findChild<AngleReading *>(QStringLiteral("elevationReading"));
-    elevation->setFocus();
+    edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA"));
+    panel.findChild<QLineEdit *>(QStringLiteral("elevationInput"))->setFocus();
     QCoreApplication::processEvents();
     QVERIFY(commands.isEmpty());
 }
@@ -150,11 +145,9 @@ void TargetControlTests::disablingCancelsPendingInput()
     panel.setCommandEnabled(true);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(reading, QStringLiteral("JA"));
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA"));
     panel.setCommandEnabled(false);
     QTest::keyClick(editor, Qt::Key_Return);
-    reading->beginEditing();
     QVERIFY(commands.isEmpty());
 }
 
@@ -165,8 +158,7 @@ void TargetControlTests::elevationRemainsNumeric()
     panel.setPosition(405, 20);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("elevationReading"));
-    auto *editor = edit(reading, QStringLiteral("JA"));
+    auto *editor = edit(panel, QStringLiteral("elevationInput"), QStringLiteral("JA"));
     QTest::keyClick(editor, Qt::Key_Return);
     QVERIFY(commands.isEmpty());
     editor->setText(QStringLiteral("90"));

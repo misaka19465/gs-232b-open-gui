@@ -6,6 +6,7 @@
 #include "ControlPanel.h"
 
 #include <QLineEdit>
+#include <QLabel>
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QSlider>
@@ -37,12 +38,11 @@ private:
 
 namespace {
 
-QLineEdit *edit(AngleReading *reading, const QString &text)
+QLineEdit *edit(ControlPanel &panel, const QString &objectName, const QString &text)
 {
-    QCoreApplication::processEvents();
-    reading->beginEditing();
-    auto *editor = reading->findChild<QLineEdit *>();
+    auto *editor = panel.findChild<QLineEdit *>(objectName);
     editor->setText(text);
+    editor->setFocus();
     return editor;
 }
 
@@ -160,8 +160,7 @@ void AngleCompensationTests::numericTargets()
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     QSignalSpy errors(&panel, &ControlPanel::inputError);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(reading, input);
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), input);
     QTest::keyClick(editor, Qt::Key_Return);
     QCOMPARE(commands.size(), mechanical < 0 ? 0 : 1);
     QCOMPARE(errors.size(), mechanical < 0 ? 1 : 0);
@@ -181,13 +180,12 @@ void AngleCompensationTests::compassAndCallsignTargets()
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     auto *compass = panel.findChild<Compass *>();
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
     for (const auto &entry : {qMakePair(0, 0), qMakePair(450, 360)}) {
         panel.setPosition(entry.first, 20);
         compass->angleRequested(330);
         QCOMPARE(commands.takeFirst().first().toString(),
                  QStringLiteral("M%1").arg(entry.second, 3, 10, QLatin1Char('0')));
-        QTest::keyClick(edit(reading, QStringLiteral("JA")), Qt::Key_Return);
+        QTest::keyClick(edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA")), Qt::Key_Return);
         QCOMPARE(commands.takeFirst().first().toString(),
                  entry.first == 0 ? QStringLiteral("M041") : QStringLiteral("M401"));
     }
@@ -195,7 +193,7 @@ void AngleCompensationTests::compassAndCallsignTargets()
     panel.setPosition(0, 20);
     compass->angleRequested(0);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M330"));
-    QTest::keyClick(edit(reading, QStringLiteral("JA")), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA")), Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M341"));
 }
 
@@ -207,17 +205,12 @@ void AngleCompensationTests::feedbackAndElevationKeepMechanicalPosition()
     panel.setPosition(450, 20);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *azimuth = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(azimuth, QStringLiteral("420"));
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("420"));
     panel.setPosition(0, 25);
     QCOMPARE(panel.azimuth(), 0);
     QCOMPARE(editor->text().toLongLong(), qint64(420));
     QTest::keyClick(editor, Qt::Key_Escape);
-    azimuth->beginEditing();
-    QCOMPARE(editor->text().toLongLong(), qint64(-30));
-    QTest::keyClick(editor, Qt::Key_Escape);
-    auto *elevation = panel.findChild<AngleReading *>(QStringLiteral("elevationReading"));
-    QTest::keyClick(edit(elevation, QStringLiteral("90")), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("elevationInput"), QStringLiteral("90")), Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("W000 090"));
     panel.setPosition(450, 25);
     panel.findChild<QPushButton *>(QStringLiteral("elevationPreset0"))->click();
@@ -261,18 +254,15 @@ void AngleCompensationTests::changingOffsetCancelsPendingInputAndMotion()
     panel.setPosition(123, 45);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(reading, QStringLiteral("300"));
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("300"));
     panel.findChild<QSlider *>()->setValue(60);
     panel.setAzimuthOffset(-30);
     QCOMPARE(panel.azimuth(), 123);
     QCOMPARE(panel.elevation(), 45);
-    QVERIFY(!editor->isVisible());
-    QTest::keyClick(editor, Qt::Key_Return);
+    QVERIFY(editor->text().isEmpty());
     QTest::qWait(200);
     QVERIFY(commands.isEmpty());
-    reading->beginEditing();
-    QCOMPARE(editor->text().toLongLong(), qint64(93));
+    QCOMPARE(panel.findChild<QLabel *>(QStringLiteral("azimuthReading"))->text(), QStringLiteral("093°"));
 }
 
 QTEST_MAIN(AngleCompensationTests)

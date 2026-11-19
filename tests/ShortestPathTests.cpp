@@ -36,12 +36,11 @@ private:
 
 namespace {
 
-QLineEdit *edit(AngleReading *reading, const QString &text)
+QLineEdit *edit(ControlPanel &panel, const QString &objectName, const QString &text)
 {
-    QCoreApplication::processEvents();
-    reading->beginEditing();
-    auto *editor = reading->findChild<QLineEdit *>();
+    auto *editor = panel.findChild<QLineEdit *>(objectName);
     editor->setText(text);
+    editor->setFocus();
     return editor;
 }
 
@@ -106,8 +105,7 @@ void ShortestPathTests::numericTargets()
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     QSignalSpy errors(&panel, &ControlPanel::inputError);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    QTest::keyClick(edit(reading, input), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("azimuthInput"), input), Qt::Key_Return);
     QCOMPARE(commands.size(), target < 0 ? 0 : 1);
     QCOMPARE(errors.size(), target < 0 ? 1 : 0);
     if (target >= 0)
@@ -148,14 +146,13 @@ void ShortestPathTests::presetsPreserveStorageAndUseLatestFeedback()
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     auto *button = panel.findChild<QPushButton *>(QStringLiteral("azimuthPreset0"));
     auto *compass = panel.findChild<Compass *>();
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
     for (int current : {0, 450}) {
         panel.setPosition(current, 20);
         button->click();
         QCOMPARE(commands.takeFirst().first().toString(), command(current == 0 ? 90 : 450));
         compass->angleRequested(60);
         QCOMPARE(commands.takeFirst().first().toString(), command(current == 0 ? 90 : 450));
-        QTest::keyClick(edit(reading, QStringLiteral("JA")), Qt::Key_Return);
+        QTest::keyClick(edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("JA")), Qt::Key_Return);
         QCOMPARE(commands.takeFirst().first().toString(), command(current == 0 ? 41 : 401));
     }
     panel.setShortestPathEnabled(false);
@@ -193,21 +190,18 @@ void ShortestPathTests::changingModeCancelsPendingCommands()
     panel.setPosition(405, 20);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = edit(reading, QStringLiteral("10"));
+    auto *editor = edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("10"));
     panel.findChild<QSlider *>()->setValue(60);
     panel.setShortestPathEnabled(false);
-    QTest::keyClick(editor, Qt::Key_Return);
+    QVERIFY(editor->text().isEmpty());
     QTest::qWait(200);
     QVERIFY(commands.isEmpty());
     QCOMPARE(panel.azimuth(), 405);
-    reading->beginEditing();
-    QCOMPARE(editor->text().toLongLong(), qint64(405));
-    QTest::keyClick(editor, Qt::Key_Escape);
+    edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("405"));
+    QTest::keyClick(editor, Qt::Key_Return);
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M405"));
     panel.setShortestPathEnabled(true);
-    reading->beginEditing();
-    QCOMPARE(editor->text().toLongLong(), qint64(45));
-    QTest::keyClick(editor, Qt::Key_Escape);
+    QVERIFY(editor->text().isEmpty());
     QVERIFY(commands.isEmpty());
 }
 
@@ -218,10 +212,9 @@ void ShortestPathTests::elevationKeepsMechanicalPosition()
     panel.setPosition(405, 20);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *elevation = panel.findChild<AngleReading *>(QStringLiteral("elevationReading"));
-    QTest::keyClick(edit(elevation, QStringLiteral("450")), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("elevationInput"), QStringLiteral("450")), Qt::Key_Return);
     QVERIFY(commands.isEmpty());
-    QTest::keyClick(edit(elevation, QStringLiteral("90")), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("elevationInput"), QStringLiteral("90")), Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("W405 090"));
     panel.findChild<QPushButton *>(QStringLiteral("elevationPreset0"))->click();
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("W405 000"));
@@ -237,10 +230,9 @@ void ShortestPathTests::disabledPreferenceRestoresContinuousTravel()
     panel.setCommandEnabled(true);
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    QTest::keyClick(edit(reading, QStringLiteral("405")), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("405")), Qt::Key_Return);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M405"));
-    QTest::keyClick(edit(reading, QStringLiteral("451")), Qt::Key_Return);
+    QTest::keyClick(edit(panel, QStringLiteral("azimuthInput"), QStringLiteral("451")), Qt::Key_Return);
     QVERIFY(commands.isEmpty());
 }
 
@@ -252,9 +244,8 @@ void ShortestPathTests::unsupportedElevationCancelsPendingCommands()
     panel.show();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
     auto *slider = panel.findChild<QSlider *>();
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("elevationReading"));
     auto *preset = panel.findChild<QPushButton *>(QStringLiteral("elevationPreset0"));
-    auto *editor = edit(reading, QStringLiteral("90"));
+    auto *editor = edit(panel, QStringLiteral("elevationInput"), QStringLiteral("90"));
     slider->setValue(60);
     panel.setElevationSupported(false);
     QTest::keyClick(editor, Qt::Key_Return);

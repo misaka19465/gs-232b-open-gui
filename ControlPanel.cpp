@@ -1,5 +1,4 @@
 #include "ControlPanel.h"
-#include "AngleReading.h"
 #include "AnglePresets.h"
 #include "AppSettings.h"
 #include "Compass.h"
@@ -9,15 +8,31 @@
 
 #include <QCheckBox>
 #include <QFrame>
+#include <QFontMetrics>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
+#include <QRegularExpression>
 #include <QRadioButton>
 #include <QSignalBlocker>
 #include <QSlider>
+#include <QStyle>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QtGlobal>
+
+namespace {
+
+void limitInputWidth(QLineEdit *input)
+{
+    const int textWidth = QFontMetrics(input->font()).horizontalAdvance(QString(10, QLatin1Char('W')));
+    const int frameWidth = input->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, nullptr, input);
+    input->setMaximumWidth(textWidth + frameWidth * 2 + 12);
+    input->setAlignment(Qt::AlignCenter);
+}
+
+} // namespace
 
 ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
 {
@@ -65,20 +80,20 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     });
     azimuthColumn->addWidget(mode);
     azimuthColumn->addStretch(1);
-    auto *azimuthLabel = new QLabel(tr("Azimuth"), azimuthControls);
-    azimuthLabel->setAlignment(Qt::AlignCenter);
-    azimuthColumn->addWidget(azimuthLabel);
-    m_azimuth = new AngleReading(450, azimuthControls);
+    m_azimuth = new QLabel(azimuthControls);
     m_azimuth->setObjectName(QStringLiteral("azimuthReading"));
-    connect(m_azimuth, &AngleReading::inputRejected, this, &ControlPanel::inputError);
-    m_azimuth->setAccessibleName(tr("Azimuth angle, grid or callsign"));
-    connect(m_azimuth, &AngleReading::angleRequested, this, [this](qint64 angle) {
-        if (m_shortestPathEnabled)
-            requestAzimuth(m_azimuthScale.mechanicalBearing(angle, m_azimuthValue));
-        else if (const auto mechanical = m_azimuthScale.mechanical(angle))
-            requestAzimuth(*mechanical);
-    });
+    m_azimuth->setAlignment(Qt::AlignCenter);
+    m_azimuth->setAccessibleName(tr("Azimuth angle"));
     azimuthColumn->addWidget(m_azimuth);
+    m_azimuthInput = new QLineEdit(azimuthControls);
+    m_azimuthInput->setObjectName(QStringLiteral("azimuthInput"));
+    m_azimuthInput->setMaxLength(64);
+    limitInputWidth(m_azimuthInput);
+    m_azimuthInput->setPlaceholderText(tr("Target"));
+    m_azimuthInput->setAccessibleName(tr("Azimuth angle, grid or callsign"));
+    m_azimuthInput->setToolTip(tr("Enter an angle, grid, callsign or prefix. Press Enter to move."));
+    connect(m_azimuthInput, &QLineEdit::returnPressed, this, &ControlPanel::submitAzimuthInput);
+    azimuthColumn->addWidget(m_azimuthInput, 0, Qt::AlignHCenter);
     azimuthColumn->addStretch(1);
     m_azimuthMotion = new MotionButtons(Qt::Horizontal, azimuthControls);
     m_azimuthMotion->setMaximumHeight(42);
@@ -119,15 +134,21 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     m_elevationCommandTimer = new QTimer(this);
     m_elevationCommandTimer->setSingleShot(true);
     m_elevationCommandTimer->setInterval(150);
-    m_elevation = new AngleReading(180, m_elevationControls);
+    m_elevation = new QLabel(m_elevationControls);
     m_elevation->setObjectName(QStringLiteral("elevationReading"));
-    connect(m_elevation, &AngleReading::inputRejected, this, &ControlPanel::inputError);
+    m_elevation->setAlignment(Qt::AlignCenter);
     m_elevation->setAccessibleName(tr("Elevation angle"));
-    connect(m_elevation, &AngleReading::angleRequested, this, [this](qint64 angle) {
-        requestElevation(int(angle));
-    });
     elevationColumn->addWidget(m_slider, 1, Qt::AlignHCenter);
     elevationColumn->addWidget(m_elevation);
+    m_elevationInput = new QLineEdit(m_elevationControls);
+    m_elevationInput->setObjectName(QStringLiteral("elevationInput"));
+    m_elevationInput->setMaxLength(64);
+    limitInputWidth(m_elevationInput);
+    m_elevationInput->setPlaceholderText(tr("Angle"));
+    m_elevationInput->setAccessibleName(tr("Elevation angle"));
+    m_elevationInput->setToolTip(tr("Enter an angle from 0 to 180° and press Enter to move."));
+    connect(m_elevationInput, &QLineEdit::returnPressed, this, &ControlPanel::submitElevationInput);
+    elevationColumn->addWidget(m_elevationInput, 0, Qt::AlignHCenter);
     elevationLayout->addLayout(elevationColumn, 1);
     m_elevationMotion = new MotionButtons(Qt::Vertical, m_elevationControls);
     m_elevationMotion->setMaximumHeight(150);
@@ -163,8 +184,10 @@ void ControlPanel::setElevationSupported(bool supported)
         return;
     m_elevationSupported = supported;
     m_elevationCommandTimer->stop();
-    if (!supported)
+    if (!supported) {
         m_elevationMotion->cancelMotion();
+        m_elevationInput->clear();
+    }
     m_elevationControls->setVisible(supported);
     setCommandEnabled(m_commandEnabled);
 }
@@ -194,35 +217,77 @@ void ControlPanel::setAzimuthOffset(int degrees)
 
 void ControlPanel::updateAzimuthInput()
 {
-    m_azimuth->setRange(m_shortestPathEnabled ? 0 : m_azimuthScale.minimum(),
-                       m_shortestPathEnabled ? 359 : m_azimuthScale.maximum(), m_shortestPathEnabled);
-    m_azimuth->setInputResolver([this](const QString &text) -> AngleReading::InputResult {
-        const auto result = TargetBearing::calculate(m_stationGrid, text);
-        if (result.solution) {
-            // NOTE: LP 只反转网格及 DXCC 算出的方位；数字输入、预设和罗盘选角不经过此解析器。
-            const int shortBearing = result.solution->roundedDegrees();
-            const int bearing = m_longPathEnabled ? AzimuthScale::normalized(shortBearing + 180)
-                                                 : shortBearing;
-            if (m_shortestPathEnabled)
-                return {bearing, {}};
-            const int mechanical = m_azimuthScale.mechanicalBearing(
-                bearing, m_azimuthValue);
-            return {m_azimuthScale.corrected(mechanical), {}};
+    m_azimuthInput->clear();
+    m_azimuthInput->setToolTip(m_shortestPathEnabled
+        ? tr("Enter an integer angle, grid, callsign or prefix. Angles wrap at 360° and use the shortest reachable rotation. Press Enter to move.")
+        : tr("Enter an angle (%1–%2°), grid, callsign or prefix. Press Enter to move.")
+              .arg(m_azimuthScale.minimum()).arg(m_azimuthScale.maximum()));
+}
+
+void ControlPanel::submitAzimuthInput()
+{
+    const QString text = m_azimuthInput->text().trimmed();
+    const qint64 minimum = m_shortestPathEnabled ? 0 : m_azimuthScale.minimum();
+    const qint64 maximum = m_shortestPathEnabled ? 359 : m_azimuthScale.maximum();
+    bool numeric = false;
+    qint64 angle = text.toLongLong(&numeric);
+    if (numeric && m_shortestPathEnabled)
+        angle = AzimuthScale::normalized(angle);
+
+    if (numeric) {
+        if (angle < minimum || angle > maximum) {
+            emit inputError(m_shortestPathEnabled
+                                ? tr("Enter an integer angle.")
+                                : tr("Enter an angle from %1 to %2°.").arg(minimum).arg(maximum));
+            return;
         }
+        if (m_shortestPathEnabled)
+            requestAzimuth(m_azimuthScale.mechanicalBearing(angle, m_azimuthValue));
+        else if (const auto mechanical = m_azimuthScale.mechanical(angle))
+            requestAzimuth(*mechanical);
+        return;
+    }
+
+    static const QRegularExpression integerPattern(QStringLiteral("^[+-]?[0-9]+$"));
+    if (integerPattern.match(text).hasMatch()) {
+        emit inputError(m_shortestPathEnabled
+                            ? tr("Enter an integer angle.")
+                            : tr("Enter an angle from %1 to %2°.").arg(minimum).arg(maximum));
+        return;
+    }
+
+    const auto result = TargetBearing::calculate(m_stationGrid, text);
+    if (!result.solution) {
         switch (result.error) {
         case TargetBearing::Error::InvalidStationGrid:
-            return {std::nullopt, tr("Set your grid in Settings → My grid… before using a grid or callsign.")};
+            emit inputError(tr("Set your grid in Settings → My grid… before using a grid or callsign."));
+            return;
         case TargetBearing::Error::UndefinedBearing:
-            return {std::nullopt, tr("This target has no unique bearing from your grid.")};
+            emit inputError(tr("This target has no unique bearing from your grid."));
+            return;
         case TargetBearing::Error::UnknownTarget:
         case TargetBearing::Error::None:
-            return {std::nullopt, tr("Unknown target. Enter a 4, 6 or 8 character grid, callsign or DXCC prefix.")};
+            emit inputError(tr("Unknown target. Enter a 4, 6 or 8 character grid, callsign or DXCC prefix."));
+            return;
         }
-        return {};
-    }, m_shortestPathEnabled
-           ? tr("Click to enter an integer angle, grid, callsign or prefix. Angles wrap at 360° and use the shortest reachable rotation. Callsigns use DXCC coordinates. Press Enter to move or Esc to cancel.")
-           : tr("Click to enter an angle (%1–%2°), grid, callsign or prefix. Callsigns use DXCC coordinates. Press Enter to move or Esc to cancel.")
-                 .arg(m_azimuthScale.minimum()).arg(m_azimuthScale.maximum()));
+    }
+
+    // NOTE: LP 只反转网格及 DXCC 算出的方位；数字输入、预设和罗盘选角不经过此解析器。
+    const int shortBearing = result.solution->roundedDegrees();
+    const int bearing = m_longPathEnabled ? AzimuthScale::normalized(shortBearing + 180)
+                                         : shortBearing;
+    requestAzimuth(m_azimuthScale.mechanicalBearing(bearing, m_azimuthValue));
+}
+
+void ControlPanel::submitElevationInput()
+{
+    bool ok = false;
+    const int angle = m_elevationInput->text().trimmed().toInt(&ok);
+    if (!ok || angle < 0 || angle > 180) {
+        emit inputError(tr("Enter an angle from 0 to 180°."));
+        return;
+    }
+    requestElevation(angle);
 }
 
 void ControlPanel::setCommandEnabled(bool enabled)
@@ -234,8 +299,12 @@ void ControlPanel::setCommandEnabled(bool enabled)
     m_slider->setEnabled(enabled && m_elevationSupported);
     m_azimuthMotion->setEnabled(enabled);
     m_elevationMotion->setEnabled(enabled && m_elevationSupported);
-    m_azimuth->setEditingEnabled(enabled);
-    m_elevation->setEditingEnabled(enabled && m_elevationSupported);
+    if (!enabled) {
+        m_azimuthInput->clear();
+        m_elevationInput->clear();
+    }
+    m_azimuthInput->setEnabled(enabled);
+    m_elevationInput->setEnabled(enabled && m_elevationSupported);
     // NOTE: 预设编辑属于本地偏好设置，断开或透传时仍可编辑；发送端会校验真实连接状态。
     m_azimuthPresets->setEnabled(true);
     m_elevationPresets->setEnabled(true);
@@ -245,8 +314,9 @@ void ControlPanel::setPosition(int azimuth, int elevation)
 {
     m_azimuthValue = qBound(0, azimuth, 450);
     m_elevationValue = qBound(0, elevation, 180);
-    m_azimuth->setAngle(m_azimuthScale.corrected(m_azimuthValue));
-    m_elevation->setAngle(m_elevationValue);
+    m_azimuth->setText(QStringLiteral("%1°").arg(m_azimuthScale.corrected(m_azimuthValue),
+                                                 3, 10, QLatin1Char('0')));
+    m_elevation->setText(QStringLiteral("%1°").arg(m_elevationValue, 3, 10, QLatin1Char('0')));
     // NOTE: 取模仅影响方位显示与目标选解，内部反馈和 W 命令始终保留机械行程。
     const qint64 corrected = m_azimuthScale.corrected(m_azimuthValue);
     m_compass->setAngle(AzimuthScale::normalized(corrected));

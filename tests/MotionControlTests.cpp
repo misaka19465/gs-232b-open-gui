@@ -1,4 +1,3 @@
-#include "AngleReading.h"
 #include "AppSettings.h"
 #include "Compass.h"
 #include "ControlPanel.h"
@@ -273,13 +272,12 @@ void MotionControlTests::longPathOnlyChangesGeographicTargets()
     panel.show();
     QCoreApplication::processEvents();
     QSignalSpy commands(&panel, &ControlPanel::commandRequested);
-    auto *reading = panel.findChild<AngleReading *>(QStringLiteral("azimuthReading"));
-    auto *editor = reading->findChild<QLineEdit *>();
+    auto *editor = panel.findChild<QLineEdit *>(QStringLiteral("azimuthInput"));
     for (const bool enabled : {false, true, false}) {
         panel.findChild<QCheckBox *>(QStringLiteral("longPath"))->setChecked(enabled);
         QVERIFY(commands.isEmpty());
-        reading->beginEditing();
         editor->setText(input);
+        editor->setFocus();
         QTest::keyClick(editor, Qt::Key_Return);
         QCOMPARE(commands.size(), 1);
         QCOMPARE(commands.takeFirst().first().toString(), enabled ? longCommand : shortCommand);

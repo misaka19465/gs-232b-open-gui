@@ -5,9 +5,10 @@
 #include <QWidget>
 #include <QString>
 
-class AngleReading;
 class AnglePresets;
 class Compass;
+class QLabel;
+class QLineEdit;
 class MotionButtons;
 class QSlider;
 class QTimer;
@@ -66,14 +67,18 @@ private:
     void setupMotionButtons();
     void requestAzimuth(int mechanical);
     void requestElevation(int angle);
+    void submitAzimuthInput();
+    void submitElevationInput();
     void updateAzimuthInput();
 
     Compass *m_compass;
     QWidget *m_elevationControls;
     MotionButtons *m_azimuthMotion;
     MotionButtons *m_elevationMotion;
-    AngleReading *m_azimuth;
-    AngleReading *m_elevation;
+    QLabel *m_azimuth;
+    QLabel *m_elevation;
+    QLineEdit *m_azimuthInput;
+    QLineEdit *m_elevationInput;
     QSlider *m_slider;
     QTimer *m_elevationCommandTimer;
     AnglePresets *m_azimuthPresets;

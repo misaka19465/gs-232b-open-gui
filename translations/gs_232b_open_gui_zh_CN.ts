@@ -202,6 +202,42 @@
             <source>Elevation angle</source>
             <translation>仰角</translation>
         </message>
+        <message>
+            <source>Azimuth angle</source>
+            <translation>方位角</translation>
+        </message>
+        <message>
+            <source>Target</source>
+            <translation>目标</translation>
+        </message>
+        <message>
+            <source>Angle</source>
+            <translation>角度</translation>
+        </message>
+        <message>
+            <source>Enter an angle, grid, callsign or prefix. Press Enter to move.</source>
+            <translation>输入角度、网格、呼号或前缀并按回车定位。</translation>
+        </message>
+        <message>
+            <source>Enter an angle from 0 to 180° and press Enter to move.</source>
+            <translation>输入 0 到 180° 的角度并按回车定位。</translation>
+        </message>
+        <message>
+            <source>Enter an integer angle, grid, callsign or prefix. Angles wrap at 360° and use the shortest reachable rotation. Press Enter to move.</source>
+            <translation>输入整数角度、网格、呼号或前缀。角度按 360° 取余，并选择行程内最短的旋转路径。按回车定位。</translation>
+        </message>
+        <message>
+            <source>Enter an angle (%1–%2°), grid, callsign or prefix. Press Enter to move.</source>
+            <translation>输入角度（%1–%2°）、网格、呼号或前缀并按回车定位。</translation>
+        </message>
+        <message>
+            <source>Enter an integer angle.</source>
+            <translation>请输入整数角度。</translation>
+        </message>
+        <message>
+            <source>Enter an angle from %1 to %2°.</source>
+            <translation>请输入 %1 到 %2° 的角度。</translation>
+        </message>
     </context>
     <context>
         <name>MotionButtons</name>
