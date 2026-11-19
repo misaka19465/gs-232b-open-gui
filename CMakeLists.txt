@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(gs_232b_open_gui VERSION 0.3.0 LANGUAGES C CXX)
 
+add_compile_definitions(GS_232B_OPEN_GUI_VERSION="${PROJECT_VERSION}")
+
 if(WIN32)
     if(NOT MSVC)
         message(FATAL_ERROR "Windows builds require MSVC and the Qt 5.15 msvc2019_64 SDK; use scripts/build-windows.sh")

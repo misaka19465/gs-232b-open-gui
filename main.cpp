@@ -4,6 +4,7 @@
 #include <QIcon>
 #include <QLibraryInfo>
 #include <QLocale>
+#include <QString>
 #include <QTranslator>
 
 int main(int argc, char *argv[])
@@ -13,6 +14,7 @@ int main(int argc, char *argv[])
     QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QApplication app(argc, argv);
+    app.setApplicationVersion(QString::fromLatin1(GS_232B_OPEN_GUI_VERSION));
     app.setWindowIcon(QIcon(QStringLiteral(":/branding/logo.png")));
     QTranslator qtTranslator;
     const QString qtTranslations = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
