@@ -19,6 +19,7 @@ MSVC 首次安装需要接受微软许可；不需要 Windows 或管理员权限
   QT_MIRROR             Qt 下载镜像根地址（默认 https://mirrors.aliyun.com/qt）
   QT_HOST_PATH          已安装的 Linux Qt 5.15.2 前缀（需 moc、rcc、uic、lrelease、lupdate）
   QT_WINDOWS_PREFIX     已安装的 Windows Qt 5.15.2 msvc2019_64 前缀
+  OPENSSL_BIN_DIR       OpenSSL 1.1.1 x64 DLL 目录（默认自动下载 1.1.1w）
   MSVC_ROOT             已通过 msvc-wine 安装的 MSVC 前缀
   MSVC_REDIST_DIR       配套 x64 Microsoft.VC143.CRT 目录（默认从 MSVC_ROOT 探测）
   MSVC_ACCEPT_LICENSE   设为 1 表示已阅读并接受微软许可，允许非交互安装
@@ -40,12 +41,15 @@ fail() { printf '错误：%s\n' "$*" >&2; exit 1; }
 trap 'printf "Windows 构建失败（第 %s 行）。\n" "$LINENO" >&2' ERR
 
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail '此脚本支持 Linux x86_64 主机。'
-for command_name in cmake ninja python3 wine winepath objdump; do
+for command_name in cmake ninja python3 curl sha256sum wine winepath objdump; do
     command -v "$command_name" >/dev/null || fail "缺少 $command_name；请参阅 docs/build-windows.md。"
 done
 
 qt_version=5.15.2
 aqt_version=3.3.0
+openssl_version=1.1.1w
+openssl_sha256=89f22bcffe61279300c69a8b03a3c7ef9f5da179acb64f1b95e870217da0098c
+openssl_url=https://wiki.overbyte.eu/arch/openssl-1.1.1w-win64.zip
 cache_dir=${WINDOWS_BUILD_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/gs232b-windows}
 build_dir=${BUILD_DIR:-$project_dir/build/windows-qt5-msvc-x86_64}
 jobs=${JOBS:-2}
@@ -68,6 +72,8 @@ qt_dir=$cache_dir/Qt
 qt_host=${QT_HOST_PATH:-$qt_dir/$qt_version/gcc_64}
 qt_windows=${QT_WINDOWS_PREFIX:-$qt_dir/$qt_version/msvc2019_64}
 msvc_root=${MSVC_ROOT:-$cache_dir/msvc2022}
+openssl_cache_dir=$cache_dir/openssl-$openssl_version
+openssl_bin_dir=${OPENSSL_BIN_DIR:-$openssl_cache_dir}
 
 # NOTE: 编译、部署工具共用独立 Wine 前缀，不受用户原有 Wine 环境影响。
 export WINEPREFIX=$cache_dir/wine-msvc
@@ -82,6 +88,49 @@ done
 msvc_root=$(cd -- "$msvc_root" && pwd)
 export MSVC_ROOT=$msvc_root
 export PATH="$msvc_root/bin/x64:$PATH"
+
+prepare_openssl() {
+    if [[ -n ${OPENSSL_BIN_DIR:-} ]]; then
+        openssl_bin_dir=$(cd -- "$openssl_bin_dir" && pwd)
+    else
+        local archive_dir=$cache_dir/downloads
+        local archive=$archive_dir/openssl-$openssl_version-win64.zip
+        mkdir -p -- "$archive_dir"
+        if [[ ! -f $archive ]]; then
+            curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 \
+                --output "$archive.part" "$openssl_url"
+            mv -- "$archive.part" "$archive"
+        fi
+        printf '%s  %s\n' "$openssl_sha256" "$archive" | sha256sum -c -
+        if [[ ! -f $openssl_cache_dir/libssl-1_1-x64.dll ||
+              ! -f $openssl_cache_dir/libcrypto-1_1-x64.dll ||
+              ! -f $openssl_cache_dir/LICENSE ]]; then
+            mkdir -p -- "$openssl_cache_dir"
+            python3 - "$archive" "$openssl_cache_dir" <<'PY'
+import pathlib
+import sys
+import zipfile
+
+archive, output = map(pathlib.Path, sys.argv[1:])
+members = ("libssl-1_1-x64.dll", "libcrypto-1_1-x64.dll", "LICENSE")
+with zipfile.ZipFile(archive) as source:
+    missing = [member for member in members if member not in source.namelist()]
+    if missing:
+        raise SystemExit(f"OpenSSL archive is missing: {', '.join(missing)}")
+    for member in members:
+        (output / member).write_bytes(source.read(member))
+PY
+        fi
+        openssl_bin_dir=$(cd -- "$openssl_cache_dir" && pwd)
+    fi
+    for dll in libssl-1_1-x64.dll libcrypto-1_1-x64.dll; do
+        [[ -f $openssl_bin_dir/$dll ]] || fail "OpenSSL 缺少 $dll：$openssl_bin_dir"
+    done
+    [[ -f $openssl_bin_dir/LICENSE ]] || fail "OpenSSL 缺少 LICENSE：$openssl_bin_dir"
+}
+
+prepare_openssl
+export OPENSSL_BIN_DIR=$openssl_bin_dir
 
 prepare_downloader() {
     local venv_dir=$cache_dir/aqt-venv
@@ -146,4 +195,4 @@ cmake -S "$project_dir" -B "$build_dir" -G Ninja \
 cmake --build "$build_dir" --target gs_232b_open_gui --parallel "$jobs"
 python3 "$project_dir/scripts/verify-windows-runtime.py" "$build_dir/gs_232b_open_gui.exe"
 
-"$project_dir/scripts/deploy-windows.sh" "$qt_windows" "$build_dir" "$cache_dir"
+"$project_dir/scripts/deploy-windows.sh" "$qt_windows" "$build_dir" "$cache_dir" "$openssl_bin_dir"

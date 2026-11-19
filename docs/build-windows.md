@@ -19,6 +19,7 @@ sudo pacman -S --needed cmake ninja python python-pip wine msitools curl tar bin
 - 固定版本的 `msvc-wine`（提交 `5dd115047b7ddcbb53cbc8b5b14163a20f4334fe`，校验 SHA-256），以及微软 MSVC 14.44（VS 2022 v143）、Windows SDK 10.0.26100。微软组件由下载器根据官方安装清单校验。
 - `aqtinstall 3.3.0` 和 Qt 5.15.2：Linux QtBase、QtTools、ICU，以及 Windows **msvc2019_64** 的 QtBase、QtTools、QtTranslations、QtSerialPort、QtWebSockets、QtWebEngine（提供 QtPdf 二进制）。
 - Qt 5.15.2 的官方 QtWebEngine 源码归档，校验 SHA-256：该 SDK 缺少 QtPdf 开发头文件和 CMake 配置，构建只提取匹配版本的官方头文件，并链接 SDK 中已有的 Qt5Pdf DLL，无需编译 Chromium。
+- OpenSSL 1.1.1w x64 运行库：Qt 5.15.2 的 Qt Network 在 Windows 上动态加载它；构建脚本会下载并校验 `libssl-1_1-x64.dll`、`libcrypto-1_1-x64.dll`。
 
 SDK 下载器使用独立 Python 虚拟环境，默认使用阿里云 Qt 镜像并保留下载校验。首次安装微软工具链时，下载器会要求接受[微软许可](https://go.microsoft.com/fwlink/?LinkId=2086102)。阅读并接受后，可以用 `MSVC_ACCEPT_LICENSE=1` 进行非交互安装；脚本不会默认替用户接受许可。MSVC/SDK 安装目录是本机的构建缓存，不应随应用分发。
 
@@ -38,12 +39,12 @@ MSVC_ACCEPT_LICENSE=1 ./scripts/build-windows.sh
 成功后生成：
 
 - `build/windows-qt5-msvc-x86_64/package/gs_232b_open_gui.exe`：Windows 程序。
-- `build/windows-qt5-msvc-x86_64/package/`：完整程序目录，包含 Qt DLL、配套 MSVC 可再分发 DLL、平台插件、中文 Qt 翻译、许可证和 `qt.conf`。
+- `build/windows-qt5-msvc-x86_64/package/`：完整程序目录，包含 Qt DLL、OpenSSL TLS 运行库、配套 MSVC 可再分发 DLL、平台插件、中文 Qt 翻译、许可证和 `qt.conf`。
 - `build/windows-qt5-msvc-x86_64/gs-232b-open-gui-windows-x86_64.zip`：可分发 ZIP 包。
 
 在 Windows 上解压 ZIP 后运行 `gs_232b_open_gui.exe`，保留完整目录。MSVC CRT 随程序部署，UCRT 由支持的 Windows 系统提供。应用自身的中文翻译嵌入 EXE。Windows 虚拟串口仍需预先安装配对驱动并创建 COM 对。
 
-脚本只构建程序，关闭测试目标。打包时通过独立 Wine 前缀运行所选 Qt SDK 的 `windeployqt.exe`，然后递归检查所有 EXE/DLL 的架构和运行库导入；发现旧 `msvcrt.dll`、MinGW 运行库或 Debug CRT 会阻止生成新包。MSVC CRT 仅取自所选工具链的 x64 可再分发目录，不从 Wine 或系统中补 DLL。Wine 下的运行验证不能代替真实 Windows 上的设备连接验证。
+脚本只构建程序，关闭测试目标。打包时通过独立 Wine 前缀运行所选 Qt SDK 的 `windeployqt.exe`，然后递归检查所有 EXE/DLL 的架构和运行库导入；发现旧 `msvcrt.dll`、MinGW 运行库、Debug CRT 或 Qt Network 缺少 OpenSSL DLL 会阻止生成新包。MSVC CRT 仅取自所选工具链的 x64 可再分发目录，不从 Wine 或系统中补 DLL。浏览器使用 Windows 自带 TLS，不能替代 Qt 应用包内的 OpenSSL 依赖；Wine 下的运行验证也不能代替真实 Windows 上的设备连接验证。
 
 ## 缓存与自定义路径
 
@@ -62,6 +63,8 @@ QT_HOST_PATH=/path/to/Qt/5.15.2/gcc_64 \
 QT_WINDOWS_PREFIX=/path/to/Qt/5.15.2/msvc2019_64 \
 ./scripts/build-windows.sh
 ```
+
+如已有经过确认的 OpenSSL 1.1.1 x64 DLL，可通过 `OPENSSL_BIN_DIR=/path/to/openssl/bin` 指定目录；目录必须同时包含两个 DLL 和 `LICENSE`。默认构建会使用固定 SHA-256 的 OpenSSL 1.1.1w ZIP，并把许可证复制到发布包的 `licenses/OpenSSL-LICENSE.txt`。
 
 `MSVC_ROOT` 必须包含 `msvc-wine` 安装生成的 `bin/x64/{cl,link,lib,rc,mt}` 包装器。自备 Windows Qt 必须是 Qt 5.15.2 **msvc2019_64**，且含上述模块。`MSVC_REDIST_DIR` 可显式指定配套的 x64 `Microsoft.VC143.CRT` 目录。
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""检查 Windows x64 发布文件是否使用动态 MSVC/UCRT，拒绝旧 CRT 和 MinGW。"""
+"""检查 Windows x64 发布文件及 Qt 5 TLS 运行库，拒绝不完整发布包。"""
 
 import argparse
 import os
@@ -7,6 +7,9 @@ import pathlib
 import re
 import subprocess
 import sys
+
+
+OPENSSL_RUNTIME_DLLS = ("libssl-1_1-x64.dll", "libcrypto-1_1-x64.dll")
 
 
 def inspect_imports(path: pathlib.Path) -> set[str]:
@@ -41,6 +44,22 @@ def verify(path: pathlib.Path) -> None:
     print(f"MSVC/UCRT x64：{path}")
 
 
+def verify_directory(path: pathlib.Path) -> None:
+    """递归检查发布目录，并确保 Qt Network 的 OpenSSL 运行库随包提供。"""
+    files = sorted(file for file in path.rglob("*")
+                   if file.is_file() and file.suffix.lower() in (".exe", ".dll"))
+    if not files:
+        raise ValueError(f"未找到 Windows 发布文件：{path}")
+    for file in files:
+        verify(file)
+    if (path / "Qt5Network.dll").is_file():
+        missing = [name for name in OPENSSL_RUNTIME_DLLS if not (path / name).is_file()]
+        if missing:
+            raise ValueError(
+                f"{path}：Qt5Network.dll 需要随包提供 OpenSSL 运行库：{', '.join(missing)}"
+            )
+
+
 def main() -> int:
     """检查文件或递归检查目录内的所有 EXE/DLL，任一失败返回非零状态。"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -48,14 +67,10 @@ def main() -> int:
     args = parser.parse_args()
     try:
         for path in args.paths:
-            files = [path]
             if path.is_dir():
-                files = sorted(file for file in path.rglob("*")
-                               if file.is_file() and file.suffix.lower() in (".exe", ".dll"))
-            if not files:
-                raise ValueError(f"未找到 Windows 发布文件：{path}")
-            for file in files:
-                verify(file)
+                verify_directory(path)
+            else:
+                verify(path)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         print(f"运行库检查失败：{error}", file=sys.stderr)
         return 1

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# NOTE: 内部打包入口，由 build-windows.sh 传入 Qt 前缀、构建目录、缓存目录及 MSVC_ROOT。
-[[ $# == 3 ]] || { printf '用法：%s <Windows Qt 前缀> <构建目录> <缓存目录>\n' "$0" >&2; exit 2; }
+# NOTE: 内部打包入口，由 build-windows.sh 传入 Qt 前缀、构建目录、缓存目录和 OpenSSL 目录。
+[[ $# == 4 ]] || { printf '用法：%s <Windows Qt 前缀> <构建目录> <缓存目录> <OpenSSL 目录>\n' "$0" >&2; exit 2; }
 qt_windows=$1
 build_dir=$2
 cache_dir=$3
+openssl_bin_dir=$4
 project_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 package_name=gs-232b-open-gui-windows-x86_64
 staging_dir=$(mktemp -d "$build_dir/.windows-package.XXXXXX")
@@ -32,6 +33,12 @@ for dll in msvcp140.dll vcruntime140.dll vcruntime140_1.dll; do
     [[ -f $redist_dir/$dll ]] || { printf '缺少 MSVC x64 CRT：%s；请检查 MSVC_REDIST_DIR。\n' "$dll" >&2; exit 1; }
 done
 cp -- "$redist_dir/"*.dll "$package_dir/"
+
+for dll in libssl-1_1-x64.dll libcrypto-1_1-x64.dll; do
+    [[ -f $openssl_bin_dir/$dll ]] || { printf '缺少 OpenSSL x64 运行库：%s；请检查 OPENSSL_BIN_DIR。\n' "$dll" >&2; exit 1; }
+    cp -- "$openssl_bin_dir/$dll" "$package_dir/"
+done
+[[ -f $openssl_bin_dir/LICENSE ]] || { printf '缺少 OpenSSL LICENSE；请检查 OPENSSL_BIN_DIR。\n' >&2; exit 1; }
 
 # NOTE: 部署工具也使用应用本地 CRT；Wine 的 system32 占位 DLL 会先于 PATH 被搜索。
 # NOTE: 临时工具目录中的 qt.conf 指回所选 SDK，不改写自备 SDK，也不依赖注册表中的 Qt。
@@ -71,6 +78,7 @@ fi
 cp -- "$qt_translation" "$package_dir/translations/"
 cp -- "$project_dir/LICENSE" "$package_dir/"
 cp -R -- "$build_dir/licenses" "$package_dir/"
+cp -- "$openssl_bin_dir/LICENSE" "$package_dir/licenses/OpenSSL-LICENSE.txt"
 for license_dir in LICENSES licenses; do
     if [[ -d $qt_windows/$license_dir ]]; then
         cp -R -- "$qt_windows/$license_dir" "$package_dir/qt-licenses"

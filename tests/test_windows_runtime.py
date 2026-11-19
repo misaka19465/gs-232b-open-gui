@@ -60,6 +60,24 @@ class WindowsRuntimeTests(unittest.TestCase):
     def test_neutral_helper_is_allowed(self):
         self.verify("helper.dll", {"kernel32.dll"})
 
+    def test_qt_network_package_requires_openssl(self):
+        with tempfile.TemporaryDirectory() as folder:
+            package = pathlib.Path(folder)
+            (package / "Qt5Network.dll").touch()
+            with patch.object(runtime, "inspect_imports", return_value=MSVC_UCRT), \
+                    self.assertRaises(ValueError):
+                runtime.verify_directory(package)
+
+    def test_qt_network_package_accepts_openssl(self):
+        with tempfile.TemporaryDirectory() as folder:
+            package = pathlib.Path(folder)
+            (package / "Qt5Network.dll").touch()
+            for name in runtime.OPENSSL_RUNTIME_DLLS:
+                (package / name).touch()
+            with patch.object(runtime, "inspect_imports", return_value=MSVC_UCRT), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                runtime.verify_directory(package)
+
     def test_import_names_are_normalized(self):
         output = "file format pei-x86-64\n DLL Name: VCRUNTIME140.dll\n DLL Name: UCRTBASE.DLL\n"
         with patch.object(runtime.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, stdout=output)):
