@@ -595,6 +595,18 @@
             <translation>GS-232B Open Control</translation>
         </message>
         <message>
+            <source>Version %1</source>
+            <translation>版本 %1</translation>
+        </message>
+        <message>
+            <source>Copyright © 2026 BG5GEB</source>
+            <translation>版权所有 © 2026 BG5GEB</translation>
+        </message>
+        <message>
+            <source>Contact: &lt;a href="mailto:bg5geb@misakanet.team"&gt;bg5geb@misakanet.team&lt;/a&gt;</source>
+            <translation>联系邮箱：&lt;a href="mailto:bg5geb@misakanet.team"&gt;bg5geb@misakanet.team&lt;/a&gt;</translation>
+        </message>
+        <message>
             <location filename="../MainWindow.cpp" line="70" />
             <source>Files</source>
             <translation>文件</translation>

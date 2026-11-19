@@ -1,5 +1,5 @@
 /*
- * GS-232B Open GUI - rotator controller GUI.
+ * GS-232B Open Control - rotator controller GUI.
  * Copyright (C) 2026 BG5GEB <bg5geb@misakanet.team>
  *
  * SPDX-License-Identifier: GPL-3.0-only

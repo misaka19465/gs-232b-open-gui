@@ -1,5 +1,5 @@
 /*
- * GS-232B Open GUI - rotator controller GUI.
+ * GS-232B Open Control - rotator controller GUI.
  * Copyright (C) 2026 BG5GEB <bg5geb@misakanet.team>
  *
  * SPDX-License-Identifier: GPL-3.0-only
@@ -47,6 +47,8 @@
 #include <QCloseEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QFrame>
+#include <QFont>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QHBoxLayout>
@@ -54,6 +56,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPixmap>
 #include <QProcess>
 #include <QPushButton>
 #include <QRegularExpression>
@@ -672,9 +675,48 @@ void MainWindow::openAbout()
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->setWindowTitle(tr("About"));
     dialog->setWindowModality(Qt::WindowModal);
-    dialog->resize(360, 150);
+    dialog->resize(400, 340);
     auto *layout = new QVBoxLayout(dialog);
-    layout->addWidget(new QLabel(tr("GS-232B Open Control"), dialog));
+    layout->setContentsMargins(28, 24, 28, 20);
+    layout->setSpacing(10);
+
+    auto *logo = new QLabel(dialog);
+    logo->setObjectName(QStringLiteral("aboutLogo"));
+    logo->setAlignment(Qt::AlignCenter);
+    logo->setPixmap(QPixmap(QStringLiteral(":/branding/logo.png"))
+                        .scaled(84, 84, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    layout->addWidget(logo);
+
+    auto *name = new QLabel(tr("GS-232B Open Control"), dialog);
+    QFont nameFont = name->font();
+    nameFont.setPointSize(nameFont.pointSize() + 3);
+    nameFont.setBold(true);
+    name->setFont(nameFont);
+    name->setAlignment(Qt::AlignCenter);
+    layout->addWidget(name);
+
+    auto *version = new QLabel(tr("Version %1").arg(QApplication::applicationVersion()), dialog);
+    version->setAlignment(Qt::AlignCenter);
+    layout->addWidget(version);
+
+    auto *separator = new QFrame(dialog);
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    layout->addWidget(separator);
+
+    auto *copyright = new QLabel(tr("Copyright © 2026 BG5GEB"), dialog);
+    copyright->setAlignment(Qt::AlignCenter);
+    layout->addWidget(copyright);
+
+    auto *email = new QLabel(
+        tr("Contact: <a href=\"mailto:bg5geb@misakanet.team\">bg5geb@misakanet.team</a>"),
+        dialog);
+    email->setTextFormat(Qt::RichText);
+    email->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    email->setOpenExternalLinks(true);
+    email->setAlignment(Qt::AlignCenter);
+    layout->addWidget(email);
+
     layout->addStretch(1);
     auto *buttons = new QDialogButtonBox(dialog);
     buttons->addButton(tr("OK"), QDialogButtonBox::AcceptRole);
