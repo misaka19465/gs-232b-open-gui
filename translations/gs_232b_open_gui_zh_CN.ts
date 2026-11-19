@@ -567,24 +567,12 @@
             <translation>设备未返回 Wi-Fi 试运行 ID。</translation>
         </message>
         <message>
-            <source>Confirm Wi-Fi configuration</source>
-            <translation>确认 Wi-Fi 配置</translation>
-        </message>
-        <message>
-            <source>The new Wi-Fi network is connected and has an IP address. Confirm and save it?</source>
-            <translation>新的 Wi-Fi 网络已连接并取得 IP 地址。是否确认并保存？</translation>
-        </message>
-        <message>
             <source>Management authentication failed.</source>
             <translation>管理认证失败。</translation>
         </message>
         <message>
             <source>Wi-Fi trial timed out; the device will roll it back.</source>
             <translation>Wi-Fi 试运行超时，设备将回滚配置。</translation>
-        </message>
-        <message>
-            <source>Wi-Fi configuration saved.</source>
-            <translation>Wi-Fi 配置已保存。</translation>
         </message>
         <message>
             <source>Management</source>
@@ -622,7 +610,7 @@ Wireless IP: %2</source>
         </message>
         <message>
             <source>Wi-Fi provisioning</source>
-            <translation>WiFi配网</translation>
+            <translation>Wi-Fi配网</translation>
         </message>
         <message>
             <source>Start AP provisioning</source>
@@ -674,7 +662,7 @@ Wireless IP: %2</source>
         </message>
         <message>
             <source>Reset Ethernet and Wi-Fi settings and reopen AP provisioning?</source>
-            <translation>要重置网口和 WiFi 设置并重新开启 AP 配网吗？</translation>
+            <translation>要重置网口和 Wi-Fi 设置并重新开启 AP 配网吗？</translation>
         </message>
         <message>
             <source>Network configuration trial timed out; the device will roll it back.</source>
@@ -698,7 +686,7 @@ Wireless IP: %2</source>
         </message>
         <message>
             <source>Confirm Wi-Fi configuration</source>
-            <translation>确认 WiFi 配置</translation>
+            <translation>确认 Wi-Fi 配置</translation>
         </message>
         <message>
             <source>Confirm network port configuration</source>
@@ -706,7 +694,7 @@ Wireless IP: %2</source>
         </message>
         <message>
             <source>The new Wi-Fi network is connected and has an IP address. Confirm and save it?</source>
-            <translation>新的 WiFi 网络已连接并取得 IP 地址。是否确认并保存？</translation>
+            <translation>新的 Wi-Fi 网络已连接并取得 IP 地址。是否确认并保存？</translation>
         </message>
         <message>
             <source>The network port has a valid IPv4 address. Confirm and save it?</source>
@@ -714,7 +702,7 @@ Wireless IP: %2</source>
         </message>
         <message>
             <source>Wi-Fi configuration saved.</source>
-            <translation>WiFi 配置已保存。</translation>
+            <translation>Wi-Fi 配置已保存。</translation>
         </message>
         <message>
             <source>Network port configuration saved.</source>
