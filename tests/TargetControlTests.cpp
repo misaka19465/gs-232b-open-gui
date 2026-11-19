@@ -21,6 +21,7 @@ private slots:
     void stationGridChangesTakeEffect();
     void presetTargetsAreSavedWithoutMoving();
     void presetTargetRequiresStationGrid();
+    void requestedBearingUsesCompensationAndNearestReachablePosition();
     void cancellationDoesNotMove();
     void disablingCancelsPendingInput();
     void elevationRemainsNumeric();
@@ -181,6 +182,22 @@ void TargetControlTests::presetTargetRequiresStationGrid()
     QCOMPARE(errors.size(), 1);
     QCOMPARE(AppSettings().presetAngle(AppSettings::Axis::Azimuth, 0), 45);
     QVERIFY(editor->isVisible());
+}
+
+void TargetControlTests::requestedBearingUsesCompensationAndNearestReachablePosition()
+{
+    QVERIFY(AppSettings().setAzimuthOffset(0));
+    ControlPanel panel;
+    panel.setCommandEnabled(true);
+    panel.setPosition(400, 0);
+    QSignalSpy commands(&panel, &ControlPanel::commandRequested);
+
+    panel.requestAzimuthBearing(10);
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M370"));
+
+    panel.setAzimuthOffset(30);
+    panel.requestAzimuthBearing(10);
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M340"));
 }
 
 void TargetControlTests::cancellationDoesNotMove()

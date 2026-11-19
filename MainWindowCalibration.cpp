@@ -9,6 +9,7 @@
 #include "n1mm/N1mmController.h"
 #include "gridtracker/GridTrackerController.h"
 #include "wsjtx/WsjtXController.h"
+#include "weather/WindProtectionController.h"
 
 #include <QAction>
 #include <QMessageBox>
@@ -46,7 +47,9 @@ void MainWindow::updateCalibrationState()
 {
     const bool enabled = m_transport->isOpen() && m_connection->isConnected() &&
                          !m_connection->isVirtualComEnabled();
-    m_control->setCommandEnabled(enabled && m_pendingCalibrationCommand.isEmpty());
+    const bool controlEnabled = enabled && m_pendingCalibrationCommand.isEmpty();
+    m_control->setCommandEnabled(controlEnabled);
+    m_windProtection->setConnected(controlEnabled);
     m_calibrationAction->setEnabled(enabled);
     if (m_calibrationDialog)
         m_calibrationDialog->setCommandEnabled(enabled && m_pendingCalibrationCommand.isEmpty());

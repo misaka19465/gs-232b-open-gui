@@ -7,6 +7,7 @@
 #include "gridtracker/GridTrackerController.h"
 #include "n1mm/N1mmController.h"
 #include "wsjtx/WsjtXController.h"
+#include "weather/WindProtectionController.h"
 
 #include <QAction>
 #include <QMenu>
@@ -73,7 +74,9 @@ void MainWindow::updateBridgeState()
 {
     const bool available = m_transport->isOpen() && m_connection->isConnected() &&
                            !m_connection->isVirtualComEnabled() &&
-                           m_pendingCalibrationCommand.isEmpty();
+                           m_pendingCalibrationCommand.isEmpty() &&
+                           !(m_control->windProtectionEnabled() &&
+                             m_windProtection->configurationReady());
     m_n1mm->setControlAvailable(available);
     m_gridTracker->setControlAvailable(available);
     m_wsjtX->setControlAvailable(available);

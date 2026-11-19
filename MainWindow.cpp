@@ -16,6 +16,8 @@
 #include "PasswordChangeDialog.h"
 #include "StationGridDialog.h"
 #include "WifiProvisioningDialog.h"
+#include "weather/WindWeatherSettingsDialog.h"
+#include "weather/WindProtectionController.h"
 #include "virtual_serial/VirtualSerialBridge.h"
 #include "n1mm/N1mmController.h"
 #include "gridtracker/GridTrackerController.h"
@@ -90,6 +92,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setCentralWidget(central);
 
     m_transport = new Communication::Transport(this);
+    m_windProtection = new WindProtectionController(this);
+    const AppSettings weatherSettings;
+    m_windProtection->setWeatherConfiguration(weatherSettings.windWeatherProvider(),
+                                              weatherSettings.qWeatherApiHost(),
+                                              weatherSettings.qWeatherApiKey(),
+                                              weatherSettings.windWeatherTermsAccepted());
+    m_windProtection->setStationGrid(weatherSettings.stationGrid());
+    m_windProtection->setDirectionOffset(m_control->windDirectionOffset());
+    m_windProtection->setAzimuthOffset(weatherSettings.azimuthOffset());
+    m_windProtection->setEnabled(m_control->windProtectionEnabled());
     m_positionPollTimer = new QTimer(this);
     m_positionPollTimer->setInterval(1000);
     m_wifiTrialPollTimer = new QTimer(this);
@@ -112,6 +124,28 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(m_control, &ControlPanel::inputError, this, [this](const QString &message) {
         statusBar()->showMessage(message, 15000);
     });
+    connect(m_control, &ControlPanel::windProtectionEnabledChanged, this, [this](bool enabled) {
+        if (!AppSettings().setWindProtectionEnabled(enabled))
+            QMessageBox::warning(this, tr("Application settings"),
+                                 tr("Could not save application settings."));
+        m_windProtection->setEnabled(enabled);
+        updateBridgeState();
+    });
+    connect(m_control, &ControlPanel::windDirectionOffsetChanged, this, [this](int degrees) {
+        if (!AppSettings().setWindDirectionOffset(degrees))
+            QMessageBox::warning(this, tr("Application settings"),
+                                 tr("Could not save application settings."));
+        m_windProtection->setDirectionOffset(degrees);
+    });
+    connect(m_windProtection, &WindProtectionController::targetBearingRequested,
+            m_control, &ControlPanel::requestAzimuthBearing);
+    connect(m_windProtection, &WindProtectionController::windDirectionChanged,
+            m_control, &ControlPanel::setWindDirection);
+    connect(m_windProtection, &WindProtectionController::statusChanged, this,
+            [this](const QString &message) {
+                if (!message.isEmpty())
+                    statusBar()->showMessage(message, 15000);
+            });
     setupRotorModel();
     createMenus();
     connect(m_control, &ControlPanel::trackingEnabledChanged, this, &MainWindow::updateBridgeState);
@@ -339,6 +373,9 @@ void MainWindow::createMenus()
     auto *antennaGainAction = settings->addAction(
         tr("Antenna gain..."), this, &MainWindow::openAntennaGain);
     antennaGainAction->setObjectName(QStringLiteral("antennaGainAction"));
+    auto *windWeatherSettingsAction = settings->addAction(
+        tr("Wind data source..."), this, &MainWindow::openWindWeatherSettings);
+    windWeatherSettingsAction->setObjectName(QStringLiteral("windWeatherSettingsAction"));
     auto *shortestPathAction = settings->addAction(tr("Shortest rotation path"));
     shortestPathAction->setObjectName(QStringLiteral("shortestPathAction"));
     shortestPathAction->setCheckable(true);
@@ -420,7 +457,25 @@ void MainWindow::setDevicePosition(int azimuth, int elevation)
     m_controllerElevation = elevation;
     m_wsjtX->setPosition(azimuth);
     m_control->setPosition(azimuth, elevation);
+    m_windProtection->setCurrentAzimuth(azimuth);
     updateCalibrationPosition();
+}
+
+void MainWindow::openWindWeatherSettings()
+{
+    auto *dialog = new WindWeatherSettingsDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(dialog, &QDialog::accepted, this, [this] {
+        const AppSettings settings;
+        const WindWeather::Provider provider = settings.windWeatherProvider();
+        m_control->setWindWeatherProvider(provider);
+        m_windProtection->setWeatherConfiguration(provider,
+                                                  settings.qWeatherApiHost(),
+                                                  settings.qWeatherApiKey(),
+                                                  settings.windWeatherTermsAccepted());
+        updateBridgeState();
+    });
+    dialog->open();
 }
 
 void MainWindow::authenticateManagement()
@@ -503,6 +558,8 @@ void MainWindow::openStationGrid()
         const QString grid = AppSettings().stationGrid();
         m_control->setStationGrid(grid);
         m_wsjtX->setStationGrid(grid);
+        m_windProtection->setStationGrid(grid);
+        updateBridgeState();
     });
     dialog->open();
 }
@@ -516,6 +573,7 @@ void MainWindow::openAzimuthOffset()
         m_n1mm->setAzimuthOffset(AppSettings().azimuthOffset());
         m_gridTracker->setAzimuthOffset(AppSettings().azimuthOffset());
         m_wsjtX->setAzimuthOffset(AppSettings().azimuthOffset());
+        m_windProtection->setAzimuthOffset(AppSettings().azimuthOffset());
         updateCalibrationPosition();
     });
     dialog->open();

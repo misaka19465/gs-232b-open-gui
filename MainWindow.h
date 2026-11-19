@@ -27,6 +27,7 @@ class QTimer;
 class VirtualSerialBridge;
 class N1mmController;
 class WsjtXController;
+class WindProtectionController;
 struct EthernetConfiguration;
 
 namespace Communication {
@@ -71,6 +72,7 @@ private:
     void getIpAddresses();
     void startApProvisioning();
     void openStationGrid();
+    void openWindWeatherSettings();
     void openAzimuthOffset();
     void openAntennaGain();
     void openCalibration();
@@ -123,6 +125,7 @@ private:
     N1mmController *m_n1mm;
     GridTrackerController *m_gridTracker;
     WsjtXController *m_wsjtX;
+    WindProtectionController *m_windProtection;
     QAction *m_n1mmEnableAction;
     QAction *m_connectionAction;
     QAction *m_authenticateAction;

@@ -4,6 +4,8 @@
 #include <QSettings>
 #include <QStringList>
 
+#include "weather/WindWeatherProvider.h"
+
 /** @brief 应用本地偏好的统一入口，集中管理存储键、默认值和校验。 */
 class AppSettings final
 {
@@ -75,6 +77,27 @@ public:
     bool shortestPathEnabled() const;
     /** @return 立即同步最短路径模式到存储是否成功。 */
     bool setShortestPathEnabled(bool enabled);
+
+    /** @brief 读取抗风模式；缺失或无效时默认关闭。 */
+    bool windProtectionEnabled() const;
+    /** @return 立即同步抗风模式到存储是否成功。 */
+    bool setWindProtectionEnabled(bool enabled);
+    /** @brief 读取相对风向的天线方位偏移，范围为 0–359°，默认 90°。 */
+    int windDirectionOffset() const;
+    /** @return 偏移合法且立即同步到存储成功时返回 true。 */
+    bool setWindDirectionOffset(int degrees);
+    /** @brief 读取和风天气 API Host；未配置或无效时返回空字符串。 */
+    QString qWeatherApiHost() const;
+    /** @brief 读取和风天气 API Key；未配置或无效时返回空字符串。 */
+    QString qWeatherApiKey() const;
+    /** @brief 保存和风天气凭据；Host 与 Key 必须同时为空或同时有效。 */
+    bool setQWeatherCredentials(const QString &apiHost, const QString &apiKey);
+    /** @brief 读取抗风风向来源；新安装默认使用免密钥 Open-Meteo。 */
+    WindWeather::Provider windWeatherProvider() const;
+    /** @brief 读取当前免密钥来源的使用条款确认状态；缺失时默认未确认。 */
+    bool windWeatherTermsAccepted() const;
+    /** @return 来源和条款确认状态均已立即同步时返回 true。 */
+    bool setWindWeatherProvider(WindWeather::Provider provider, bool termsAccepted = false);
 
     /** @brief 读取同机 N1MM 接入偏好；缺失或无效时默认关闭。 */
     bool n1mmEnabled() const;

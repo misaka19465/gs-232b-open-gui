@@ -136,6 +136,38 @@
             <translation>对网格、呼号/DXCC 及 GridTracker 目标使用长径。直接角度及 N1MM 目标不受影响。</translation>
         </message>
         <message>
+            <source>Wind protection</source>
+            <translation>抗风</translation>
+        </message>
+        <message>
+            <source>When configured, wind protection takes priority over bridge control and points to wind direction plus the configured offset.</source>
+            <translation>抗风配置完整时优先于桥接控制，并自动将天线转到来风方向加设定偏移角。</translation>
+        </message>
+        <message>
+            <source>Offset</source>
+            <translation>偏移</translation>
+        </message>
+        <message>
+            <source>Target azimuth = wind-from direction + offset.</source>
+            <translation>目标方位角 = 来风方向 + 偏移角。</translation>
+        </message>
+        <message>
+            <source>Wind from %1° · &lt;a href="https://open-meteo.com/"&gt;Open-Meteo&lt;/a&gt; · &lt;a href="https://creativecommons.org/licenses/by/4.0/"&gt;CC BY 4.0&lt;/a&gt;</source>
+            <translation>来风方向 %1° · &lt;a href="https://open-meteo.com/"&gt;Open-Meteo&lt;/a&gt; · &lt;a href="https://creativecommons.org/licenses/by/4.0/"&gt;CC BY 4.0&lt;/a&gt;</translation>
+        </message>
+        <message>
+            <source>Wind from %1° · &lt;a href="https://www.met.no/en"&gt;MET Norway&lt;/a&gt; · &lt;a href="https://creativecommons.org/licenses/by/4.0/"&gt;CC BY 4.0&lt;/a&gt;</source>
+            <translation>来风方向 %1° · &lt;a href="https://www.met.no/en"&gt;MET Norway&lt;/a&gt; · &lt;a href="https://creativecommons.org/licenses/by/4.0/"&gt;CC BY 4.0&lt;/a&gt;</translation>
+        </message>
+        <message>
+            <source>Wind from %1° · &lt;a href="https://www.qweather.com"&gt;QWeather&lt;/a&gt; · &lt;a href="https://developer.qweather.com/attribution.html"&gt;Attribution&lt;/a&gt;</source>
+            <translation>来风方向 %1° · &lt;a href="https://www.qweather.com"&gt;和风天气&lt;/a&gt; · &lt;a href="https://developer.qweather.com/attribution.html"&gt;数据来源&lt;/a&gt;</translation>
+        </message>
+        <message>
+            <source>Weather data attribution</source>
+            <translation>天气数据来源信息</translation>
+        </message>
+        <message>
             <source>Azimuth</source>
             <translation>方位角</translation>
         </message>
@@ -210,6 +242,128 @@
         <message>
             <source>Enter an angle from %1 to %2°.</source>
             <translation>请输入 %1 到 %2° 的角度。</translation>
+        </message>
+    </context>
+    <context>
+        <name>WindWeatherSettingsDialog</name>
+        <message>
+            <source>Wind data source</source>
+            <translation>风向数据源</translation>
+        </message>
+        <message>
+            <source>Open-Meteo (no API key)</source>
+            <translation>Open-Meteo（无需 API 密钥）</translation>
+        </message>
+        <message>
+            <source>MET Norway (no API key; slower updates)</source>
+            <translation>MET Norway（无需 API 密钥；更新较慢）</translation>
+        </message>
+        <message>
+            <source>QWeather (API Host and API Key)</source>
+            <translation>和风天气（需要 API 主机和密钥）</translation>
+        </message>
+        <message>
+            <source>API Host</source>
+            <translation>API 主机</translation>
+        </message>
+        <message>
+            <source>API Key</source>
+            <translation>API 密钥</translation>
+        </message>
+        <message>
+            <source>Provider</source>
+            <translation>服务</translation>
+        </message>
+        <message>
+            <source>Global current-weather data. An API Host and API Key are required. Your Maidenhead grid center is sent over HTTPS; the key is stored unencrypted in local settings.</source>
+            <translation>全球实时天气，需要 API 主机和密钥。本站 Maidenhead 网格中心坐标将通过 HTTPS 发送；密钥以明文保存在本地设置中。</translation>
+        </message>
+        <message>
+            <source>Global forecast data; no API key is needed. Your Maidenhead grid center and public IP are sent to MET Norway. The app checks at least every three hours; data outside the Nordic region can update about every six hours. A writable local cache is required to honor response expiry and validation headers. A recognizable User-Agent and attribution are required. &lt;a href="https://api.met.no/doc/TermsOfService"&gt;Terms&lt;/a&gt;.</source>
+            <translation>全球天气预报，无需 API 密钥。本站 Maidenhead 网格中心坐标和公网 IP 将发送给 MET Norway。应用至少每三小时查询一次；北欧以外的数据约每六小时更新。为遵守响应中的过期和验证标头，需要可写的本地缓存。该服务要求提供可识别的 User-Agent 并标注来源。&lt;a href="https://api.met.no/doc/TermsOfService"&gt;服务条款&lt;/a&gt;。</translation>
+        </message>
+        <message>
+            <source>I have read and agree to the MET Weather API terms and attribution requirements.</source>
+            <translation>我已阅读并同意 MET Weather API 服务条款及来源标注要求。</translation>
+        </message>
+        <message>
+            <source>Global model-based wind data; no API key is needed. Your Maidenhead grid center and public IP are sent to Open-Meteo over HTTPS. The free API is for non-commercial use and requires attribution. &lt;a href="https://open-meteo.com/en/terms"&gt;Terms&lt;/a&gt;. This is model output, not a nearby weather-station reading.</source>
+            <translation>全球模型风向数据，无需 API 密钥。本站 Maidenhead 网格中心坐标和公网 IP 将通过 HTTPS 发送给 Open-Meteo。免费 API 仅限非商业用途并要求标注来源。&lt;a href="https://open-meteo.com/en/terms"&gt;服务条款&lt;/a&gt;。这是模型数据，不是附近气象站的实测读数。</translation>
+        </message>
+        <message>
+            <source>I agree to Open-Meteo's free non-commercial use and attribution requirements.</source>
+            <translation>我同意 Open-Meteo 免费 API 的非商业使用及来源标注要求。</translation>
+        </message>
+        <message>
+            <source>Review and accept this provider's terms before using it.</source>
+            <translation>使用前请阅读并接受此服务的条款。</translation>
+        </message>
+        <message>
+            <source>Cancel</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <source>Save</source>
+            <translation>保存</translation>
+        </message>
+        <message>
+            <source>Enter both a valid API Host and API Key, or clear both fields.</source>
+            <translation>请输入有效的 API 主机和密钥，或同时清空两项。</translation>
+        </message>
+        <message>
+            <source>Application settings</source>
+            <translation>应用设置</translation>
+        </message>
+        <message>
+            <source>Could not save application settings.</source>
+            <translation>无法保存应用设置。</translation>
+        </message>
+    </context>
+    <context>
+        <name>WindProtectionController</name>
+        <message>
+            <source>Configure the QWeather API Host and API Key in Settings.</source>
+            <translation>请先在“设置”中配置和风天气 API 主机和密钥。</translation>
+        </message>
+        <message>
+            <source>Set your Maidenhead grid in Settings → My grid… before using wind protection.</source>
+            <translation>启用抗风前，请先在“设置 → 我的网格…”中设置本站网格。</translation>
+        </message>
+        <message>
+            <source>The configured Maidenhead grid is invalid.</source>
+            <translation>本站网格格式无效。</translation>
+        </message>
+        <message>
+            <source>Weather API response exceeded the size limit.</source>
+            <translation>天气服务响应超过大小限制。</translation>
+        </message>
+        <message>
+            <source>Weather API request failed (HTTP %1).</source>
+            <translation>天气服务请求失败（HTTP %1）。</translation>
+        </message>
+        <message>
+            <source>Weather API request failed: %1</source>
+            <translation>天气服务请求失败：%1</translation>
+        </message>
+        <message>
+            <source>Weather API returned invalid wind direction data.</source>
+            <translation>天气服务返回的风向数据无效。</translation>
+        </message>
+        <message>
+            <source>Review and accept the selected weather provider terms in Settings.</source>
+            <translation>请在“设置 → 风向数据源…”中阅读并接受所选服务的条款。</translation>
+        </message>
+        <message>
+            <source>MET Norway returned HTTP 203; check for a newer app version.</source>
+            <translation>MET Norway 返回 HTTP 203；请检查是否有新版应用。</translation>
+        </message>
+        <message>
+            <source>MET Norway requires a writable HTTP cache to honor response expiry.</source>
+            <translation>为遵守 MET Norway 响应过期时间，需要可写的 HTTP 缓存。</translation>
+        </message>
+        <message>
+            <source>Wind from %1°; checking the configured antenna angle.</source>
+            <translation>来风方向 %1°，正在检查设定的天线角度。</translation>
         </message>
     </context>
     <context>
@@ -400,6 +554,14 @@
         <message>
             <source>Antenna gain...</source>
             <translation>天线增益…</translation>
+        </message>
+        <message>
+            <source>QWeather API...</source>
+            <translation type="vanished">和风天气 API...</translation>
+        </message>
+        <message>
+            <source>Wind data source...</source>
+            <translation>风向数据源…</translation>
         </message>
         <message>
             <source>Settings</source>

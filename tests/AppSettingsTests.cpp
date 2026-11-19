@@ -36,6 +36,9 @@ private slots:
     void invalidN1mmPreferencesUseDefaults();
     void persistsGridTrackerPreference();
     void persistsWsjtXPreferences();
+    void persistsWindProtectionPreferencesAndCredentials();
+    void legacyQWeatherCredentialsSelectQWeather();
+    void invalidWindProtectionPreferencesUseDefaults();
     void validatesAndPersistsStationGrid_data();
     void validatesAndPersistsStationGrid();
     void clearsStationGrid();
@@ -62,6 +65,12 @@ void AppSettingsTests::defaultsDoNotWrite()
     QVERIFY(settings.stationGrid().isEmpty());
     QCOMPARE(settings.azimuthOffset(), 0);
     QVERIFY(settings.shortestPathEnabled());
+    QVERIFY(!settings.windProtectionEnabled());
+    QCOMPARE(settings.windDirectionOffset(), 90);
+    QVERIFY(!settings.windWeatherTermsAccepted());
+    QVERIFY(settings.qWeatherApiHost().isEmpty());
+    QVERIFY(settings.qWeatherApiKey().isEmpty());
+    QCOMPARE(settings.windWeatherProvider(), WindWeather::Provider::OpenMeteo);
     QVERIFY(!settings.n1mmEnabled());
     QVERIFY(!settings.gridTrackerEnabled());
     QCOMPARE(settings.n1mmRotorName(), QStringLiteral("GS232B"));
@@ -598,6 +607,85 @@ void AppSettingsTests::persistsWsjtXPreferences()
     QVERIFY(reopened.wsjtXEnabled());
 }
 
+void AppSettingsTests::persistsWindProtectionPreferencesAndCredentials()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    QVERIFY(settings.setWindProtectionEnabled(true));
+    QVERIFY(settings.setWindDirectionOffset(0));
+    QVERIFY(settings.setWindDirectionOffset(359));
+    QVERIFY(!settings.setWindDirectionOffset(-1));
+    QVERIFY(!settings.setWindDirectionOffset(360));
+    QVERIFY(!settings.setQWeatherCredentials(QStringLiteral("api.example.com"), QString()));
+    QVERIFY(!settings.setQWeatherCredentials(QStringLiteral("https://abcxyz.qweatherapi.com"),
+                                             QStringLiteral("dedicated-test-key")));
+    QVERIFY(!settings.setQWeatherCredentials(QStringLiteral("abcxyz.qweatherapi.com"),
+                                             QStringLiteral("key with spaces")));
+    QVERIFY(settings.setQWeatherCredentials(QStringLiteral("abcxyz.qweatherapi.com"),
+                                            QStringLiteral("dedicated-test-key")));
+    QVERIFY(settings.setWindWeatherProvider(WindWeather::Provider::MetNorway, true));
+
+    const AppSettings reopened(fileName);
+    QVERIFY(reopened.windProtectionEnabled());
+    QCOMPARE(reopened.windDirectionOffset(), 359);
+    QCOMPARE(reopened.qWeatherApiHost(), QStringLiteral("abcxyz.qweatherapi.com"));
+    QCOMPARE(reopened.qWeatherApiKey(), QStringLiteral("dedicated-test-key"));
+    QCOMPARE(reopened.windWeatherProvider(), WindWeather::Provider::MetNorway);
+    QVERIFY(reopened.windWeatherTermsAccepted());
+    QVERIFY(settings.setWindWeatherProvider(WindWeather::Provider::QWeather));
+    QCOMPARE(AppSettings(fileName).windWeatherProvider(), WindWeather::Provider::QWeather);
+    QVERIFY(!AppSettings(fileName).windWeatherTermsAccepted());
+    QVERIFY(settings.setWindWeatherProvider(WindWeather::Provider::OpenMeteo));
+    QCOMPARE(AppSettings(fileName).windWeatherProvider(), WindWeather::Provider::OpenMeteo);
+
+    QVERIFY(settings.setWindProtectionEnabled(false));
+    QVERIFY(settings.setQWeatherCredentials(QString(), QString()));
+    QVERIFY(!AppSettings(fileName).windProtectionEnabled());
+    QVERIFY(AppSettings(fileName).qWeatherApiHost().isEmpty());
+    QVERIFY(AppSettings(fileName).qWeatherApiKey().isEmpty());
+}
+
+void AppSettingsTests::legacyQWeatherCredentialsSelectQWeather()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    {
+        QFile file(fileName);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        const QByteArray content(
+            "[weather]\nqweatherApiHost=abcxyz.qweatherapi.com\nqweatherApiKey=legacy-key\n");
+        QCOMPARE(file.write(content), content.size());
+    }
+    QCOMPARE(AppSettings(fileName).windWeatherProvider(), WindWeather::Provider::QWeather);
+}
+
+void AppSettingsTests::invalidWindProtectionPreferencesUseDefaults()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    const QByteArray content(
+        "[rotor]\nwindProtectionEnabled=invalid\nwindDirectionOffset=360\n"
+        "[weather]\nqweatherApiHost=https://abcxyz.qweatherapi.com\nqweatherApiKey=key\n");
+    {
+        QFile file(fileName);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write(content), content.size());
+    }
+
+    const AppSettings settings(fileName);
+    QVERIFY(!settings.windProtectionEnabled());
+    QCOMPARE(settings.windDirectionOffset(), 90);
+    QVERIFY(settings.qWeatherApiHost().isEmpty());
+    QCOMPARE(settings.qWeatherApiKey(), QStringLiteral("key"));
+    QFile file(fileName);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), content);
+}
+
 void AppSettingsTests::reportsStorageFailure()
 {
     QTemporaryDir directory;
@@ -619,6 +707,10 @@ void AppSettingsTests::reportsStorageFailure()
     QVERIFY(!settings.setWsjtXEnabled(true));
     QVERIFY(!settings.setN1mmRotorName(QStringLiteral("Tower A")));
     QVERIFY(!settings.setStationGrid(QStringLiteral("PM95AA")));
+    QVERIFY(!settings.setWindProtectionEnabled(true));
+    QVERIFY(!settings.setWindDirectionOffset(90));
+    QVERIFY(!settings.setQWeatherCredentials(QStringLiteral("abcxyz.qweatherapi.com"),
+                                             QStringLiteral("dedicated-test-key")));
     QVERIFY(!settings.setPresetAngle(AppSettings::Axis::Azimuth, 0, 90));
 }
 

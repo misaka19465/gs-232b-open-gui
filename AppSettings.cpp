@@ -2,6 +2,9 @@
 #include "MaidenheadLocator.h"
 #include "n1mm/N1mmProtocol.h"
 
+#include <QRegularExpression>
+
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -19,6 +22,12 @@ const QString AntennaGainKey = QStringLiteral("view/antennaGain");
 const QString StationGridKey = QStringLiteral("station/grid");
 const QString AzimuthOffsetKey = QStringLiteral("rotor/azimuthOffset");
 const QString ShortestPathEnabledKey = QStringLiteral("rotor/shortestPathEnabled");
+const QString WindProtectionEnabledKey = QStringLiteral("rotor/windProtectionEnabled");
+const QString WindDirectionOffsetKey = QStringLiteral("rotor/windDirectionOffset");
+const QString QWeatherApiHostKey = QStringLiteral("weather/qweatherApiHost");
+const QString QWeatherApiKeyKey = QStringLiteral("weather/qweatherApiKey");
+const QString WindWeatherProviderKey = QStringLiteral("weather/windProvider");
+const QString WindWeatherTermsAcceptedKey = QStringLiteral("weather/windTermsAccepted");
 const QString N1mmEnabledKey = QStringLiteral("n1mm/enabled");
 const QString N1mmRotorNameKey = QStringLiteral("n1mm/rotorName");
 const QString GridTrackerEnabledKey = QStringLiteral("gridtracker/enabled");
@@ -38,6 +47,18 @@ bool readBoolean(const QVariant &stored, bool fallback = false)
     if (value.compare(QStringLiteral("false"), Qt::CaseInsensitive) == 0 || value == QStringLiteral("0"))
         return false;
     return fallback;
+}
+
+bool isValidQWeatherApiHost(const QString &host)
+{
+    static const QString suffix = QStringLiteral(".qweatherapi.com");
+    if (host.isEmpty() || host.size() > 253 || host.startsWith(QLatin1Char('.')) ||
+        host.endsWith(QLatin1Char('.')) || host.contains(QStringLiteral("..")) ||
+        !host.endsWith(suffix, Qt::CaseInsensitive) || host.size() <= suffix.size())
+        return false;
+    static const QRegularExpression pattern(
+        QStringLiteral("\\A(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}\\z"));
+    return pattern.match(host).hasMatch();
 }
 
 bool isValidWindowSize(const QSize &size)
@@ -203,6 +224,109 @@ bool AppSettings::shortestPathEnabled() const
 bool AppSettings::setShortestPathEnabled(bool enabled)
 {
     return storeValue(ShortestPathEnabledKey, enabled);
+}
+
+bool AppSettings::windProtectionEnabled() const
+{
+    return readBoolean(m_settings.value(WindProtectionEnabledKey));
+}
+
+bool AppSettings::setWindProtectionEnabled(bool enabled)
+{
+    return storeValue(WindProtectionEnabledKey, enabled);
+}
+
+int AppSettings::windDirectionOffset() const
+{
+    bool ok = false;
+    const int degrees = m_settings.value(WindDirectionOffsetKey).toString().toInt(&ok);
+    return ok && degrees >= 0 && degrees < 360 ? degrees : 90;
+}
+
+bool AppSettings::setWindDirectionOffset(int degrees)
+{
+    return degrees >= 0 && degrees < 360 && storeValue(WindDirectionOffsetKey, degrees);
+}
+
+QString AppSettings::qWeatherApiHost() const
+{
+    const QString host = m_settings.value(QWeatherApiHostKey).toString().trimmed();
+    return isValidQWeatherApiHost(host) ? host : QString();
+}
+
+QString AppSettings::qWeatherApiKey() const
+{
+    const QString key = m_settings.value(QWeatherApiKeyKey).toString().trimmed();
+    if (key.isEmpty() || key.size() > 512)
+        return {};
+    for (const QChar character : key) {
+        if (character.unicode() < 0x21 || character.unicode() > 0x7e)
+            return {};
+    }
+    return key;
+}
+
+bool AppSettings::setQWeatherCredentials(const QString &apiHost, const QString &apiKey)
+{
+    const QString host = apiHost.trimmed();
+    const QString key = apiKey.trimmed();
+    if (host.isEmpty() != key.isEmpty() ||
+        (!host.isEmpty() && !isValidQWeatherApiHost(host)) ||
+        (!key.isEmpty() && (key.size() > 512 ||
+                            std::any_of(key.cbegin(), key.cend(), [](QChar character) {
+                                return character.unicode() < 0x21 || character.unicode() > 0x7e;
+                            }))))
+        return false;
+    m_settings.setValue(QWeatherApiHostKey, host);
+    m_settings.setValue(QWeatherApiKeyKey, key);
+    m_settings.sync();
+    return m_settings.status() == QSettings::NoError;
+}
+
+WindWeather::Provider AppSettings::windWeatherProvider() const
+{
+    if (!m_settings.contains(WindWeatherProviderKey)) {
+        if (!qWeatherApiHost().isEmpty() && !qWeatherApiKey().isEmpty())
+            return WindWeather::Provider::QWeather;
+        if (windProtectionEnabled())
+            return WindWeather::Provider::QWeather;
+        return WindWeather::Provider::OpenMeteo;
+    }
+    const QString provider = m_settings.value(WindWeatherProviderKey).toString();
+    if (provider == QStringLiteral("qweather"))
+        return WindWeather::Provider::QWeather;
+    if (provider == QStringLiteral("met-norway"))
+        return WindWeather::Provider::MetNorway;
+    return WindWeather::Provider::OpenMeteo;
+}
+
+bool AppSettings::windWeatherTermsAccepted() const
+{
+    return readBoolean(m_settings.value(WindWeatherTermsAcceptedKey));
+}
+
+bool AppSettings::setWindWeatherProvider(WindWeather::Provider provider, bool termsAccepted)
+{
+    switch (provider) {
+    case WindWeather::Provider::OpenMeteo:
+        break;
+    case WindWeather::Provider::QWeather:
+        termsAccepted = false;
+        break;
+    case WindWeather::Provider::MetNorway:
+        break;
+    default:
+        return false;
+    }
+    m_settings.setValue(WindWeatherProviderKey,
+                        provider == WindWeather::Provider::QWeather
+                            ? QStringLiteral("qweather")
+                            : provider == WindWeather::Provider::MetNorway
+                                ? QStringLiteral("met-norway")
+                                : QStringLiteral("open-meteo"));
+    m_settings.setValue(WindWeatherTermsAcceptedKey, termsAccepted);
+    m_settings.sync();
+    return m_settings.status() == QSettings::NoError;
 }
 
 bool AppSettings::n1mmEnabled() const

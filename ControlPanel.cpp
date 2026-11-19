@@ -17,6 +17,7 @@
 #include <QRadioButton>
 #include <QSignalBlocker>
 #include <QSlider>
+#include <QSpinBox>
 #include <QStyle>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -78,6 +79,49 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
         m_longPathEnabled = enabled;
         emit longPathEnabledChanged(enabled);
     });
+
+    const AppSettings preferences;
+    m_windProtectionEnabled = preferences.windProtectionEnabled();
+    m_windDirectionOffset = preferences.windDirectionOffset();
+    m_windWeatherProvider = preferences.windWeatherProvider();
+    auto *windMode = new QCheckBox(tr("Wind protection"), mode);
+    windMode->setObjectName(QStringLiteral("windProtectionMode"));
+    windMode->setChecked(m_windProtectionEnabled);
+    windMode->setToolTip(
+        tr("When configured, wind protection takes priority over bridge control and points to wind direction plus the configured offset."));
+    modeLayout->addWidget(windMode);
+
+    auto *windOffsetRow = new QHBoxLayout;
+    windOffsetRow->setContentsMargins(0, 0, 0, 0);
+    auto *windOffsetLabel = new QLabel(tr("Offset"), mode);
+    m_windDirectionOffsetInput = new QSpinBox(mode);
+    m_windDirectionOffsetInput->setObjectName(QStringLiteral("windDirectionOffset"));
+    m_windDirectionOffsetInput->setRange(0, 359);
+    m_windDirectionOffsetInput->setSuffix(QStringLiteral("°"));
+    m_windDirectionOffsetInput->setValue(m_windDirectionOffset);
+    m_windDirectionOffsetInput->setToolTip(tr("Target azimuth = wind-from direction + offset."));
+    windOffsetLabel->setBuddy(m_windDirectionOffsetInput);
+    windOffsetRow->addWidget(windOffsetLabel);
+    windOffsetRow->addWidget(m_windDirectionOffsetInput);
+    modeLayout->addLayout(windOffsetRow);
+
+    m_windStatus = new QLabel(mode);
+    m_windStatus->setObjectName(QStringLiteral("windDirectionStatus"));
+    m_windStatus->setTextFormat(Qt::RichText);
+    m_windStatus->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    m_windStatus->setOpenExternalLinks(true);
+    m_windStatus->setToolTip(tr("Weather data attribution"));
+    updateWindStatus();
+    modeLayout->addWidget(m_windStatus);
+    connect(windMode, &QCheckBox::toggled, this, [this](bool enabled) {
+        m_windProtectionEnabled = enabled;
+        emit windProtectionEnabledChanged(enabled);
+    });
+    connect(m_windDirectionOffsetInput, qOverload<int>(&QSpinBox::valueChanged),
+            this, [this](int degrees) {
+                m_windDirectionOffset = degrees;
+                emit windDirectionOffsetChanged(degrees);
+            });
     azimuthColumn->addWidget(mode);
     azimuthColumn->addStretch(1);
     m_azimuth = new QLabel(azimuthControls);
@@ -177,7 +221,6 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
     });
 
     setupMotionButtons();
-    const AppSettings preferences;
     m_shortestPathEnabled = preferences.shortestPathEnabled();
     m_azimuthPresets->setShortestPathEnabled(m_shortestPathEnabled);
     setAzimuthOffset(preferences.azimuthOffset());
@@ -358,6 +401,48 @@ void ControlPanel::setStationGrid(const QString &grid)
 void ControlPanel::setAntennaGain(double gain)
 {
     m_compass->setAntennaGain(gain);
+}
+
+void ControlPanel::setWindDirection(int direction)
+{
+    m_windDirection = direction >= 0 ? AzimuthScale::normalized(direction) : -1;
+    updateWindStatus();
+}
+
+void ControlPanel::setWindWeatherProvider(WindWeather::Provider provider)
+{
+    if (m_windWeatherProvider == provider)
+        return;
+    m_windWeatherProvider = provider;
+    m_windDirection = -1;
+    updateWindStatus();
+}
+
+void ControlPanel::updateWindStatus()
+{
+    const QString direction = m_windDirection >= 0
+        ? QString::number(m_windDirection)
+        : QStringLiteral("--");
+    if (m_windWeatherProvider == WindWeather::Provider::OpenMeteo) {
+        m_windStatus->setText(
+            tr("Wind from %1° · <a href=\"https://open-meteo.com/\">Open-Meteo</a> · <a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>")
+                .arg(direction));
+        return;
+    }
+    if (m_windWeatherProvider == WindWeather::Provider::MetNorway) {
+        m_windStatus->setText(
+            tr("Wind from %1° · <a href=\"https://www.met.no/en\">MET Norway</a> · <a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>")
+                .arg(direction));
+        return;
+    }
+    m_windStatus->setText(
+        tr("Wind from %1° · <a href=\"https://www.qweather.com\">QWeather</a> · <a href=\"https://developer.qweather.com/attribution.html\">Attribution</a>")
+            .arg(direction));
+}
+
+void ControlPanel::requestAzimuthBearing(int bearing)
+{
+    requestAzimuth(m_azimuthScale.mechanicalBearing(bearing, m_azimuthValue));
 }
 
 int ControlPanel::elevation() const
