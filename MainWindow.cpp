@@ -73,7 +73,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     m_persistedWindowSize = AppSettings().windowSize();
     setObjectName(QStringLiteral("mainWindow"));
     setWindowTitle(tr("GS-232B Open Control"));
-    setMinimumWidth(860);
     resize(1280, 360);
 
     auto *central = new QWidget(this);
