@@ -51,6 +51,9 @@ const QString N1mmEnabledKey = QStringLiteral("n1mm/enabled");
 const QString N1mmRotorNameKey = QStringLiteral("n1mm/rotorName");
 const QString GridTrackerEnabledKey = QStringLiteral("gridtracker/enabled");
 const QString WsjtXEnabledKey = QStringLiteral("wsjtx/enabled");
+const QString HamAlertEnabledKey = QStringLiteral("hamalert/enabled");
+const QString HamAlertUsernameKey = QStringLiteral("hamalert/username");
+const QString HamAlertPasswordKey = QStringLiteral("hamalert/telnetPassword");
 
 bool isSupportedBaudRate(int baudRate)
 {
@@ -387,6 +390,62 @@ bool AppSettings::wsjtXEnabled() const
 bool AppSettings::setWsjtXEnabled(bool enabled)
 {
     return storeValue(WsjtXEnabledKey, enabled);
+}
+
+QString AppSettings::hamAlertUsername() const
+{
+    const QString username = m_settings.value(HamAlertUsernameKey).toString().trimmed();
+    if (username.isEmpty() || username.size() > 64)
+        return {};
+    for (const QChar character : username) {
+        if (character.unicode() < 0x21 || character.unicode() > 0x7e)
+            return {};
+    }
+    return username;
+}
+
+QString AppSettings::hamAlertTelnetPassword() const
+{
+    const QString password = m_settings.value(HamAlertPasswordKey).toString().trimmed();
+    if (password.isEmpty() || password.size() > 256)
+        return {};
+    for (const QChar character : password) {
+        if (character.unicode() < 0x20 || character.unicode() > 0x7e)
+            return {};
+    }
+    return password;
+}
+
+bool AppSettings::setHamAlertCredentials(const QString &username, const QString &password)
+{
+    const QString normalizedUsername = username.trimmed();
+    const QString normalizedPassword = password.trimmed();
+    if (normalizedUsername.isEmpty() || normalizedUsername.size() > 64 ||
+        normalizedPassword.isEmpty() || normalizedPassword.size() > 256)
+        return false;
+    for (const QChar character : normalizedUsername) {
+        if (character.unicode() < 0x21 || character.unicode() > 0x7e)
+            return false;
+    }
+    for (const QChar character : normalizedPassword) {
+        if (character.unicode() < 0x20 || character.unicode() > 0x7e)
+            return false;
+    }
+
+    m_settings.setValue(HamAlertUsernameKey, normalizedUsername);
+    m_settings.setValue(HamAlertPasswordKey, normalizedPassword);
+    m_settings.sync();
+    return m_settings.status() == QSettings::NoError;
+}
+
+bool AppSettings::hamAlertEnabled() const
+{
+    return readBoolean(m_settings.value(HamAlertEnabledKey));
+}
+
+bool AppSettings::setHamAlertEnabled(bool enabled)
+{
+    return storeValue(HamAlertEnabledKey, enabled);
 }
 
 QString AppSettings::stationGrid() const

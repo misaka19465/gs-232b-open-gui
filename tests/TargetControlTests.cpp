@@ -45,6 +45,7 @@ private slots:
     void presetTargetsAreSavedWithoutMoving();
     void presetTargetRequiresStationGrid();
     void requestedBearingUsesCompensationAndNearestReachablePosition();
+    void selectedAlertTargetsWorkInManualAndTrackingModes();
     void controlModesAreMutuallyExclusive();
     void windDirectionOffsetDialogPersistsAngle();
     void cancellationDoesNotMove();
@@ -223,6 +224,29 @@ void TargetControlTests::requestedBearingUsesCompensationAndNearestReachablePosi
     panel.setAzimuthOffset(30);
     panel.requestAzimuthBearing(10);
     QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M340"));
+}
+
+void TargetControlTests::selectedAlertTargetsWorkInManualAndTrackingModes()
+{
+    ControlPanel panel;
+    panel.setStationGrid(QStringLiteral("PM95AA"));
+    panel.setAzimuthOffset(0);
+    panel.setCommandEnabled(true);
+    QSignalSpy commands(&panel, &ControlPanel::commandRequested);
+    auto *manual = panel.findChild<QRadioButton *>(QStringLiteral("manualMode"));
+    auto *tracking = panel.findChild<QRadioButton *>(QStringLiteral("trackingMode"));
+    QVERIFY(manual);
+    QVERIFY(tracking);
+
+    manual->click();
+    QVERIFY(!panel.trackingEnabled());
+    QVERIFY(panel.requestTarget(QStringLiteral("JA1ABC")));
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M011"));
+
+    tracking->click();
+    QVERIFY(panel.trackingEnabled());
+    QVERIFY(panel.requestTarget(QStringLiteral("JA1ABC")));
+    QCOMPARE(commands.takeFirst().first().toString(), QStringLiteral("M011"));
 }
 
 void TargetControlTests::controlModesAreMutuallyExclusive()

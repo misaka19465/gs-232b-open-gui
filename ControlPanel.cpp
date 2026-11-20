@@ -446,6 +446,24 @@ void ControlPanel::requestAzimuthBearing(int bearing)
     requestAzimuth(m_azimuthScale.mechanicalBearing(bearing, m_azimuthValue));
 }
 
+bool ControlPanel::requestTarget(const QString &target)
+{
+    if (!m_commandEnabled) {
+        emit inputError(tr("Connect to the rotator before selecting a target."));
+        return false;
+    }
+
+    QString error;
+    const auto bearing = resolveTargetBearing(target, error);
+    if (!bearing) {
+        emit inputError(error);
+        return false;
+    }
+
+    requestAzimuth(m_azimuthScale.mechanicalBearing(*bearing, m_azimuthValue));
+    return true;
+}
+
 int ControlPanel::elevation() const
 {
     return m_elevationValue;

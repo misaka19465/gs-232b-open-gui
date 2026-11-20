@@ -137,6 +137,17 @@ public:
     /** @return 立即同步 WSJT-X/JTDX 接入偏好到存储是否成功。 */
     bool setWsjtXEnabled(bool enabled);
 
+    /** @brief 读取 HamAlert 用户名；缺失或无效时返回空字符串。 */
+    QString hamAlertUsername() const;
+    /** @brief 读取专用 HamAlert Telnet 密码；缺失或无效时返回空字符串。 */
+    QString hamAlertTelnetPassword() const;
+    /** @brief 保存 HamAlert 凭据；两项都必须有效，密码按本地应用设置保存。 */
+    bool setHamAlertCredentials(const QString &username, const QString &password);
+    /** @brief 读取 HamAlert feed 偏好；缺失或无效时默认关闭。 */
+    bool hamAlertEnabled() const;
+    /** @return 立即同步 HamAlert feed 偏好到存储是否成功。 */
+    bool setHamAlertEnabled(bool enabled);
+
     /** @brief 读取本站 Maidenhead 网格；返回大写，缺失或无效时返回空字符串。 */
     QString stationGrid() const;
     /**

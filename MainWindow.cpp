@@ -41,6 +41,7 @@
 #include "virtual_serial/VirtualSerialBridge.h"
 #include "n1mm/N1mmController.h"
 #include "gridtracker/GridTrackerController.h"
+#include "hamalert/HamAlertController.h"
 #include "wsjtx/WsjtXController.h"
 
 #include <QActionGroup>
@@ -48,6 +49,7 @@
 #include <QCloseEvent>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDockWidget>
 #include <QFrame>
 #include <QFont>
 #include <QJsonDocument>
@@ -270,7 +272,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     const int consoleHeight = m_console->isHidden()
                                   ? 0
                                   : m_console->height() + centralWidget()->layout()->spacing();
-    resize(m_persistedWindowSize.width(), m_persistedWindowSize.height() + consoleHeight);
+    const int alertPanelWidth = m_hamAlertDock && !m_hamAlertDock->isHidden()
+                                    ? m_hamAlertDock->minimumWidth()
+                                    : 0;
+    resize(m_persistedWindowSize.width() + alertPanelWidth,
+           m_persistedWindowSize.height() + consoleHeight);
     m_windowSizeRestored = true;
     connect(qApp, &QCoreApplication::aboutToQuit, this,
             [this] { saveWindowSize(false); });
@@ -283,6 +289,7 @@ MainWindow::~MainWindow()
     m_n1mm->setEnabled(false);
     m_gridTracker->setEnabled(false);
     m_wsjtX->setEnabled(false);
+    m_hamAlert->setEnabled(false);
     const QSignalBlocker transportBlocker(m_transport);
     const QSignalBlocker virtualSerialBlocker(m_virtualSerial);
     m_transport->close();
@@ -295,11 +302,14 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     if (!m_windowSizeRestored || isMaximized() || isFullScreen())
         return;
 
-    int widthWithoutElevation = event->size().width();
+    int widthWithoutAlertPanel = event->size().width();
+    if (m_hamAlertDock && m_hamAlertDock->isVisible())
+        widthWithoutAlertPanel -= m_hamAlertDock->width();
+    int widthWithoutElevation = widthWithoutAlertPanel;
     if (m_control->elevationSupported()) {
         const QMargins margins = centralWidget()->layout()->contentsMargins();
         widthWithoutElevation -=
-            (event->size().width() - margins.left() - margins.right()) / 2;
+            (widthWithoutAlertPanel - margins.left() - margins.right()) / 2;
     }
     int heightWithoutConsole = event->size().height();
     if (!m_console->isHidden())
@@ -322,7 +332,10 @@ void MainWindow::saveWindowSize(bool warnOnFailure)
         return;
 
     if (!isMaximized() && !isFullScreen()) {
-        int widthWithoutElevation = width();
+        int widthWithoutAlertPanel = width();
+        if (m_hamAlertDock && m_hamAlertDock->isVisible())
+            widthWithoutAlertPanel -= m_hamAlertDock->width();
+        int widthWithoutElevation = widthWithoutAlertPanel;
         if (m_control->elevationSupported())
             widthWithoutElevation -= m_control->width() / 2;
         int heightWithoutConsole = height();
@@ -456,10 +469,11 @@ void MainWindow::createMenus()
     m_resetNetworkAction = management->addAction(
         tr("Reset network configuration"), this, &MainWindow::resetNetworkConfiguration);
     m_resetNetworkAction->setObjectName(QStringLiteral("resetNetworkAction"));
-    auto *bridge = menuBar()->addMenu(tr("Bridge"));
-    createN1mmMenu(bridge);
-    createGridTrackerMenu(bridge);
-    createWsjtXMenu(bridge);
+    auto *external = menuBar()->addMenu(tr("External"));
+    createN1mmMenu(external);
+    createGridTrackerMenu(external);
+    createWsjtXMenu(external);
+    createHamAlertMenu(external);
     auto *upgrade = menuBar()->addMenu(tr("Upgrade"));
     m_upgradeAction = upgrade->addAction(tr("Flash firmware..."),
                                         this, &MainWindow::openFirmwareUpgrade);

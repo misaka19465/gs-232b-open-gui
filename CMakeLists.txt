@@ -109,6 +109,16 @@ target_compile_features(gs232b_wsjtx PUBLIC cxx_std_17)
 target_include_directories(gs232b_wsjtx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(gs232b_wsjtx PUBLIC Qt5::Core Qt5::Network gs232b_targeting)
 
+add_library(gs232b_hamalert STATIC
+    hamalert/HamAlertProtocol.cpp
+    hamalert/HamAlertProtocol.h
+    hamalert/HamAlertController.cpp
+    hamalert/HamAlertController.h
+)
+target_compile_features(gs232b_hamalert PUBLIC cxx_std_17)
+target_include_directories(gs232b_hamalert PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(gs232b_hamalert PUBLIC Qt5::Core Qt5::Network)
+
 add_library(gs232b_wind_protection STATIC
     weather/WindProtectionController.cpp
     weather/WindProtectionController.h
@@ -141,12 +151,15 @@ set(GUI_SOURCES
     MainWindowN1mm.cpp
     MainWindowGridTracker.cpp
     MainWindowWsjtX.cpp
+    MainWindowHamAlert.cpp
     MainWindowRotorModel.cpp
     MainWindow.h
     NetworkAddresses.cpp
     NetworkAddresses.h
     n1mm/N1mmNameDialog.cpp
     n1mm/N1mmNameDialog.h
+    hamalert/HamAlertSettingsDialog.cpp
+    hamalert/HamAlertSettingsDialog.h
     ConnectionDialog.cpp
     ConnectionDialog.h
     ControlPanel.cpp
@@ -208,6 +221,7 @@ target_link_libraries(gs_232b_open_gui
         gs232b_n1mm
         gs232b_gridtracker
         gs232b_wsjtx
+        gs232b_hamalert
         gs232b_wind_protection
 )
 
@@ -221,6 +235,10 @@ if(BUILD_TESTING)
     target_link_libraries(wsjtx_tests PRIVATE gs232b_wsjtx Qt5::Test)
     add_test(NAME wsjtx_tests COMMAND wsjtx_tests)
     set_tests_properties(wsjtx_tests PROPERTIES RESOURCE_LOCK wsjtx_udp_port)
+
+    add_executable(hamalert_tests tests/HamAlertTests.cpp)
+    target_link_libraries(hamalert_tests PRIVATE gs232b_hamalert Qt5::Test)
+    add_test(NAME hamalert_tests COMMAND hamalert_tests)
 
     add_executable(network_addresses_tests
         tests/NetworkAddressesTests.cpp
@@ -250,7 +268,7 @@ if(BUILD_TESTING)
     target_link_libraries(n1mm_connection_tests PRIVATE
         Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test
         gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx
-        gs232b_wind_protection)
+        gs232b_wind_protection gs232b_hamalert)
     add_test(NAME n1mm_connection_tests COMMAND n1mm_connection_tests)
     set_tests_properties(n1mm_connection_tests PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
@@ -265,7 +283,7 @@ if(BUILD_TESTING)
     target_link_libraries(gridtracker_connection_tests PRIVATE
         Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test
         gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx
-        gs232b_wind_protection)
+        gs232b_wind_protection gs232b_hamalert)
     add_test(NAME gridtracker_connection_tests COMMAND gridtracker_connection_tests)
     set_tests_properties(gridtracker_tests PROPERTIES RESOURCE_LOCK gridtracker_udp_ports)
     set_tests_properties(gridtracker_connection_tests PROPERTIES
@@ -352,7 +370,7 @@ if(BUILD_TESTING)
     target_link_libraries(motion_connection_tests PRIVATE
         Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test
         gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx
-        gs232b_wind_protection)
+        gs232b_wind_protection gs232b_hamalert)
     add_test(NAME motion_connection_tests COMMAND motion_connection_tests)
     set_tests_properties(motion_connection_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
@@ -394,7 +412,7 @@ if(BUILD_TESTING)
     target_compile_features(rotor_model_connection_tests PRIVATE cxx_std_17)
     target_include_directories(rotor_model_connection_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(rotor_model_connection_tests
-        PRIVATE Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx gs232b_wind_protection
+        PRIVATE Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx gs232b_wind_protection gs232b_hamalert
     )
     add_test(NAME rotor_model_connection_tests COMMAND rotor_model_connection_tests)
     set_tests_properties(rotor_model_connection_tests PROPERTIES
@@ -408,7 +426,7 @@ if(BUILD_TESTING)
     target_compile_features(ap_provisioning_connection_tests PRIVATE cxx_std_17)
     target_include_directories(ap_provisioning_connection_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(ap_provisioning_connection_tests
-        PRIVATE Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx gs232b_wind_protection
+        PRIVATE Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx gs232b_wind_protection gs232b_hamalert
     )
     add_test(NAME ap_provisioning_connection_tests COMMAND ap_provisioning_connection_tests)
     set_tests_properties(ap_provisioning_connection_tests PROPERTIES
@@ -422,7 +440,7 @@ if(BUILD_TESTING)
     target_compile_features(virtual_serial_connection_tests PRIVATE cxx_std_17)
     target_include_directories(virtual_serial_connection_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(virtual_serial_connection_tests
-        PRIVATE Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx gs232b_wind_protection
+        PRIVATE Qt5::Widgets Qt5::Network Qt5::Pdf Qt5::SerialPort Qt5::WebSockets Qt5::Test gs232b_virtual_serial gs232b_targeting gs232b_n1mm gs232b_gridtracker gs232b_wsjtx gs232b_wind_protection gs232b_hamalert
     )
     add_test(NAME virtual_serial_connection_tests COMMAND virtual_serial_connection_tests)
     set_tests_properties(virtual_serial_connection_tests PROPERTIES

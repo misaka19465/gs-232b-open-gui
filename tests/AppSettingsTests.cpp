@@ -55,6 +55,8 @@ private slots:
     void invalidN1mmPreferencesUseDefaults();
     void persistsGridTrackerPreference();
     void persistsWsjtXPreferences();
+    void persistsHamAlertPreferencesAndCredentials();
+    void rejectsInvalidHamAlertCredentials();
     void persistsWindProtectionPreferencesAndCredentials();
     void legacyQWeatherCredentialsSelectQWeather();
     void invalidWindProtectionPreferencesUseDefaults();
@@ -92,6 +94,9 @@ void AppSettingsTests::defaultsDoNotWrite()
     QCOMPARE(settings.windWeatherProvider(), WindWeather::Provider::OpenMeteo);
     QVERIFY(!settings.n1mmEnabled());
     QVERIFY(!settings.gridTrackerEnabled());
+    QVERIFY(!settings.hamAlertEnabled());
+    QVERIFY(settings.hamAlertUsername().isEmpty());
+    QVERIFY(settings.hamAlertTelnetPassword().isEmpty());
     QCOMPARE(settings.n1mmRotorName(), QStringLiteral("GS232B"));
     const std::array<int, 10> azimuth{0, 45, 90, 135, 180, 225, 270, 315, 360, 405};
     const std::array<int, 6> elevation{0, 25, 50, 75, 100, 125};
@@ -624,6 +629,39 @@ void AppSettingsTests::persistsWsjtXPreferences()
     QVERIFY(settings.setWsjtXEnabled(true));
     const AppSettings reopened(fileName);
     QVERIFY(reopened.wsjtXEnabled());
+}
+
+void AppSettingsTests::persistsHamAlertPreferencesAndCredentials()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    QVERIFY(settings.setHamAlertCredentials(QStringLiteral("N0CALL"),
+                                            QStringLiteral("dedicated telnet password")));
+    QVERIFY(settings.setHamAlertEnabled(true));
+
+    const AppSettings reopened(fileName);
+    QVERIFY(reopened.hamAlertEnabled());
+    QCOMPARE(reopened.hamAlertUsername(), QStringLiteral("N0CALL"));
+    QCOMPARE(reopened.hamAlertTelnetPassword(), QStringLiteral("dedicated telnet password"));
+}
+
+void AppSettingsTests::rejectsInvalidHamAlertCredentials()
+{
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString fileName = directory.filePath(QStringLiteral("settings.ini"));
+    AppSettings settings(fileName);
+    QVERIFY(settings.setHamAlertCredentials(QStringLiteral("N0CALL"), QStringLiteral("secret")));
+
+    QVERIFY(!settings.setHamAlertCredentials(QString(), QStringLiteral("secret")));
+    QVERIFY(!settings.setHamAlertCredentials(QStringLiteral("has space"), QStringLiteral("secret")));
+    QVERIFY(!settings.setHamAlertCredentials(QStringLiteral("N0CALL"), QStringLiteral("line\nbreak")));
+    QVERIFY(!settings.setHamAlertCredentials(QString(65, QLatin1Char('A')), QStringLiteral("secret")));
+    QVERIFY(!settings.setHamAlertCredentials(QStringLiteral("N0CALL"), QString(257, QLatin1Char('x'))));
+    QCOMPARE(settings.hamAlertUsername(), QStringLiteral("N0CALL"));
+    QCOMPARE(settings.hamAlertTelnetPassword(), QStringLiteral("secret"));
 }
 
 void AppSettingsTests::persistsWindProtectionPreferencesAndCredentials()

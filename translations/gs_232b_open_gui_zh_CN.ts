@@ -235,6 +235,14 @@
             <source>Enter an angle from %1 to %2°.</source>
             <translation>请输入 %1 到 %2° 的角度。</translation>
         </message>
+        <message>
+            <source>Enter an angle from 0 to 180°.</source>
+            <translation>请输入 0 到 180° 之间的角度。</translation>
+        </message>
+        <message>
+            <source>Connect to the rotator before selecting a target.</source>
+            <translation>选择目标前请先连接旋转器。</translation>
+        </message>
     </context>
     <context>
         <name>WindDirectionOffsetDialog</name>
@@ -667,7 +675,7 @@
         </message>
         <message>
             <location filename="../MainWindow.cpp" line="76" />
-            <source>Bridge</source>
+            <source>External</source>
             <translation>外部</translation>
         </message>
         <message>
@@ -969,6 +977,94 @@ Wireless IP: %2</source>
         <message>
             <source>Rotor model saved.</source>
             <translation>旋转器型号已保存。</translation>
+        </message>
+        <message>
+            <source>Band: %1</source>
+            <translation>频段：%1</translation>
+        </message>
+        <message>
+            <source>DXCC: %1</source>
+            <translation>DXCC：%1</translation>
+        </message>
+        <message>
+            <source>Spotter: %1</source>
+            <translation>Spotter：%1</translation>
+        </message>
+        <message>
+            <source>Source: %1</source>
+            <translation>来源：%1</translation>
+        </message>
+        <message>
+            <source>Alert: %1</source>
+            <translation>告警：%1</translation>
+        </message>
+        <message>
+            <source>HamAlert spots</source>
+            <translation>HamAlert spot</translation>
+        </message>
+        <message>
+            <source>Disabled</source>
+            <translation>已停用</translation>
+        </message>
+        <message>
+            <source>No HamAlert spots received.</source>
+            <translation>尚未收到 HamAlert spot。</translation>
+        </message>
+        <message>
+            <source>Time (UTC)</source>
+            <translation>时间（UTC）</translation>
+        </message>
+        <message>
+            <source>Callsign</source>
+            <translation>呼号</translation>
+        </message>
+        <message>
+            <source>MHz</source>
+            <translation>频率（MHz）</translation>
+        </message>
+        <message>
+            <source>Mode</source>
+            <translation>模式</translation>
+        </message>
+        <message>
+            <source>Source</source>
+            <translation>来源</translation>
+        </message>
+        <message>
+            <source>HamAlert...</source>
+            <translation>HamAlert…</translation>
+        </message>
+        <message>
+            <source>Receive spots from HamAlert triggers with Telnet enabled. Double-click a spot to turn the rotator.</source>
+            <translation>接收已启用 Telnet 的 HamAlert 触发器告警。双击告警可转动旋转器。</translation>
+        </message>
+        <message>
+            <source>Configure credentials...</source>
+            <translation>配置凭据…</translation>
+        </message>
+        <message>
+            <source>HamAlert</source>
+            <translation>HamAlert</translation>
+        </message>
+        <message>
+            <source>Show main window</source>
+            <translation>显示主窗口</translation>
+        </message>
+        <message>
+            <source>Quit</source>
+            <translation>退出</translation>
+        </message>
+        <message>
+            <source>New HamAlert spot</source>
+            <translation>新的 HamAlert spot</translation>
+        </message>
+        <message>
+            <source>%1 MHz</source>
+            <translation>%1 MHz</translation>
+        </message>
+        <message>
+            <source>System notifications are unavailable; spots remain in the HamAlert list.</source>
+            <translation>系统通知不可用；HamAlert spot 仍会显示在列表中。</translation>
         </message>
     </context>
     <context>
@@ -1515,6 +1611,88 @@ Turn the map off and on to retry</source>
         <message>
             <source>N1MM turn command ignored: no recent rotator position is available.</source>
             <translation>已忽略 N1MM 转向命令：尚无最新的旋转器方位读数。</translation>
+        </message>
+    </context>
+    <context>
+        <name>HamAlertController</name>
+        <message>
+            <source>HamAlert login timed out; retrying.</source>
+            <translation>HamAlert 登录超时；正在重试。</translation>
+        </message>
+        <message>
+            <source>Connected; signing in to HamAlert...</source>
+            <translation>已连接；正在登录 HamAlert…</translation>
+        </message>
+        <message>
+            <source>HamAlert connection closed; retrying.</source>
+            <translation>HamAlert 连接已关闭；正在重试。</translation>
+        </message>
+        <message>
+            <source>HamAlert connection failed: %1</source>
+            <translation>HamAlert 连接失败：%1</translation>
+        </message>
+        <message>
+            <source>Disabled</source>
+            <translation>已停用</translation>
+        </message>
+        <message>
+            <source>Configure a HamAlert username and Telnet password first.</source>
+            <translation>请先配置 HamAlert 用户名和 Telnet 密码。</translation>
+        </message>
+        <message>
+            <source>Connecting to HamAlert...</source>
+            <translation>正在连接 HamAlert…</translation>
+        </message>
+        <message>
+            <source>HamAlert sent an oversized response; reconnecting.</source>
+            <translation>HamAlert 响应过大；正在重新连接。</translation>
+        </message>
+        <message>
+            <source>HamAlert login failed; check the account credentials.</source>
+            <translation>HamAlert 登录失败；请检查账户凭据。</translation>
+        </message>
+        <message>
+            <source>Connected to HamAlert</source>
+            <translation>已连接到 HamAlert</translation>
+        </message>
+        <message>
+            <source>HamAlert JSON mode was rejected; reconnecting.</source>
+            <translation>HamAlert 拒绝 JSON 模式；正在重新连接。</translation>
+        </message>
+        <message>
+            <source>HamAlert heartbeat timed out; retrying.</source>
+            <translation>HamAlert 心跳超时；正在重试。</translation>
+        </message>
+    </context>
+    <context>
+        <name>HamAlertSettingsDialog</name>
+        <message>
+            <source>HamAlert settings</source>
+            <translation>HamAlert 设置</translation>
+        </message>
+        <message>
+            <source>HamAlert username</source>
+            <translation>HamAlert 用户名</translation>
+        </message>
+        <message>
+            <source>Telnet password</source>
+            <translation>Telnet 密码</translation>
+        </message>
+        <message>
+            <source>Enable the Telnet action on the HamAlert triggers you want to receive. Telnet is unencrypted; use a dedicated password. Credentials are saved in local application settings.</source>
+            <translation>请在希望接收的 HamAlert 触发器中启用 Telnet 操作。Telnet 未加密，请使用专用密码。凭据保存在本地应用设置中。</translation>
+        </message>
+        <message>
+            <source>Cancel</source>
+            <translation>取消</translation>
+        </message>
+        <message>
+            <source>Save</source>
+            <translation>保存</translation>
+        </message>
+        <message>
+            <source>Could not save the HamAlert credentials.</source>
+            <translation>无法保存 HamAlert 凭据。</translation>
         </message>
     </context>
     <context>

@@ -74,6 +74,8 @@ public:
     void setWindWeatherProvider(WindWeather::Provider provider);
     /** @brief 按圆周方位选择最近可达行程并请求定位。 */
     void requestAzimuthBearing(int bearing);
+    /** @brief 按本站网格及长径偏好解析目标并请求定位；不依赖手动/追踪模式。 */
+    bool requestTarget(const QString &target);
     /** @return 已保存的抗风模式状态。 */
     bool windProtectionEnabled() const { return m_windProtectionEnabled; }
     /** @return 最近一次设备方位读数，不包含补偿；供分轴反馈及 W 命令保留机械行程。 */

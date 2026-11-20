@@ -23,6 +23,7 @@
 #include <QJsonObject>
 #include <QMainWindow>
 #include <QPointer>
+#include <QSet>
 #include <QSize>
 #include <QString>
 
@@ -34,14 +35,18 @@ class ConnectionDialog;
 class ConsolePanel;
 class ControlPanel;
 class FaultStatusMonitor;
+class HamAlertController;
 class GridTrackerController;
 class QLabel;
 class ManagementKeyDialog;
 class QMenu;
 class QCloseEvent;
+class QDockWidget;
 class QResizeEvent;
 class RotorModelDialog;
 class QShowEvent;
+class QSystemTrayIcon;
+class QTableWidget;
 class QTimer;
 class VirtualSerialBridge;
 class N1mmController;
@@ -51,6 +56,10 @@ struct EthernetConfiguration;
 
 namespace Communication {
 class Transport;
+}
+
+namespace HamAlert {
+struct Alert;
 }
 
 /** @brief 使用系统样式的纯 Qt Widgets 单窗口上位机原型。 */
@@ -77,6 +86,11 @@ private:
     void createN1mmMenu(QMenu *bridge);
     void createGridTrackerMenu(QMenu *bridge);
     void createWsjtXMenu(QMenu *bridge);
+    void createHamAlertMenu(QMenu *external);
+    void openHamAlertSettings();
+    void appendHamAlert(const HamAlert::Alert &alert);
+    void notifyHamAlert(const HamAlert::Alert &alert);
+    void setHamAlertPanelVisible(bool visible);
     void updateBridgeState();
     void openN1mmName();
     void updateConnectionState();
@@ -145,8 +159,17 @@ private:
     N1mmController *m_n1mm;
     GridTrackerController *m_gridTracker;
     WsjtXController *m_wsjtX;
+    HamAlertController *m_hamAlert;
     WindProtectionController *m_windProtection;
     QAction *m_n1mmEnableAction;
+    QAction *m_hamAlertEnableAction;
+    QDockWidget *m_hamAlertDock;
+    QLabel *m_hamAlertStatus;
+    QLabel *m_hamAlertEmpty;
+    QTableWidget *m_hamAlertTable;
+    QSystemTrayIcon *m_hamAlertTray = nullptr;
+    bool m_hamAlertNotificationWarningShown = false;
+    QSet<QString> m_hamAlertKeys;
     QAction *m_connectionAction;
     QAction *m_authenticateAction;
     QAction *m_changePasswordAction;
