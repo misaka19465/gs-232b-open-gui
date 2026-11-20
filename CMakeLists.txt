@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-project(gs_232b_open_gui VERSION 0.4.0 LANGUAGES C CXX)
+project(gs_232b_open_gui VERSION 0.4.1 LANGUAGES C CXX)
 
 add_compile_definitions(GS_232B_OPEN_GUI_VERSION="${PROJECT_VERSION}")
 
