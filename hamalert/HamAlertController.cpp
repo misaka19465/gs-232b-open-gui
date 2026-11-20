@@ -85,6 +85,7 @@ bool HamAlertController::setEnabled(bool enabled)
 
     if (!enabled) {
         m_enabled = false;
+        setStreaming(false);
         m_reconnectTimer.stop();
         m_handshakeTimer.stop();
         m_heartbeatTimer.stop();
@@ -119,6 +120,7 @@ void HamAlertController::startConnection()
     m_handshakeTimer.start();
     m_heartbeatTimer.stop();
     m_heartbeatTimeoutTimer.stop();
+    setStreaming(false);
     m_protocolState = ProtocolState::Disconnected;
     m_input.clear();
     m_pendingHeartbeat.clear();
@@ -179,7 +181,7 @@ void HamAlertController::processInput()
                 m_protocolState = ProtocolState::Streaming;
                 m_handshakeTimer.stop();
                 m_heartbeatTimer.start();
-                emit statusChanged(tr("Connected to HamAlert"));
+                setStreaming(true);
             } else if (containsToken(line, QByteArrayLiteral("Invalid")) ||
                        containsToken(line, QByteArrayLiteral("failed"))) {
                 scheduleReconnect(tr("HamAlert JSON mode was rejected; reconnecting."));
@@ -234,6 +236,7 @@ void HamAlertController::scheduleReconnect(const QString &status)
     if (!m_enabled || m_reconnectTimer.isActive())
         return;
 
+    setStreaming(false);
     m_protocolState = ProtocolState::Disconnected;
     m_input.clear();
     m_handshakeTimer.stop();
@@ -244,4 +247,13 @@ void HamAlertController::scheduleReconnect(const QString &status)
     emit statusChanged(status);
     emit errorOccurred(status);
     m_socket.abort();
+}
+
+void HamAlertController::setStreaming(bool streaming)
+{
+    if (m_streaming == streaming)
+        return;
+
+    m_streaming = streaming;
+    emit streamingChanged(streaming);
 }

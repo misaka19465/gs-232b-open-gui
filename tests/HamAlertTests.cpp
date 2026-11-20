@@ -50,6 +50,7 @@ void HamAlertTests::logsInSetsJsonModeAndReceivesSpots()
     HamAlertController controller(QStringLiteral("127.0.0.1"), server.serverPort());
     controller.setCredentials(QStringLiteral("N0CALL"), QStringLiteral("test-telnet-password"));
     QList<HamAlert::Alert> received;
+    QSignalSpy streamingStates(&controller, &HamAlertController::streamingChanged);
     connect(&controller, &HamAlertController::alertReceived, this,
             [&received](const HamAlert::Alert &alert) { received.append(alert); });
 
@@ -79,10 +80,14 @@ void HamAlertTests::logsInSetsJsonModeAndReceivesSpots()
         "\"frequency\":\"14.074000\",\"mode\":\"FT8\"}\r\n"));
     client->flush();
     QTRY_COMPARE(received.size(), 1);
+    QCOMPARE(streamingStates.size(), 1);
+    QCOMPARE(streamingStates.first().first().toBool(), true);
     QCOMPARE(received.first().fullCallsign, QStringLiteral("K1ABC"));
     QCOMPARE(received.first().frequency, QStringLiteral("14.074000"));
 
     QVERIFY(controller.setEnabled(false));
+    QCOMPARE(streamingStates.size(), 2);
+    QCOMPARE(streamingStates.last().first().toBool(), false);
     client->deleteLater();
 }
 

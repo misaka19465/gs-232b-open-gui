@@ -1652,10 +1652,6 @@ Turn the map off and on to retry</source>
             <translation>HamAlert 登录失败；请检查账户凭据。</translation>
         </message>
         <message>
-            <source>Connected to HamAlert</source>
-            <translation>已连接到 HamAlert</translation>
-        </message>
-        <message>
             <source>HamAlert JSON mode was rejected; reconnecting.</source>
             <translation>HamAlert 拒绝 JSON 模式；正在重新连接。</translation>
         </message>

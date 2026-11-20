@@ -31,6 +31,8 @@ public:
 signals:
     /** @brief 连接阶段或运行状态变更。 */
     void statusChanged(const QString &status);
+    /** @brief JSON feed 开始或停止接收告警。 */
+    void streamingChanged(bool streaming);
     /** @brief 连接失败或需要重连时发出本地化诊断信息。 */
     void errorOccurred(const QString &message);
     /** @brief 收到一条包含可定位呼号的 HamAlert JSON spot。 */
@@ -52,6 +54,7 @@ private:
     void writeCommand(const QByteArray &command);
     void sendHeartbeat();
     void scheduleReconnect(const QString &status);
+    void setStreaming(bool streaming);
 
     QTcpSocket m_socket;
     QTimer m_reconnectTimer;
@@ -68,4 +71,5 @@ private:
     quint64 m_heartbeatSequence = 0;
     ProtocolState m_protocolState = ProtocolState::Disconnected;
     bool m_enabled = false;
+    bool m_streaming = false;
 };

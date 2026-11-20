@@ -123,6 +123,9 @@ void MainWindow::createHamAlertMenu(QMenu *external)
     m_hamAlertTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_hamAlertTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_hamAlertTable->setAlternatingRowColors(true);
+    m_hamAlertTable->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_hamAlertTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_hamAlertTable->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     m_hamAlertTable->verticalHeader()->hide();
     m_hamAlertTable->horizontalHeader()->setStretchLastSection(true);
     m_hamAlertTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
@@ -138,7 +141,10 @@ void MainWindow::createHamAlertMenu(QMenu *external)
     connect(m_hamAlert, &HamAlertController::statusChanged, this,
             [this](const QString &status) {
                 m_hamAlertStatus->setText(status);
+                m_hamAlertStatus->show();
             });
+    connect(m_hamAlert, &HamAlertController::streamingChanged, this,
+            [this](bool streaming) { m_hamAlertStatus->setVisible(!streaming); });
     connect(m_hamAlert, &HamAlertController::errorOccurred, this,
             [this](const QString &message) { statusBar()->showMessage(message, 15000); });
     connect(m_hamAlert, &HamAlertController::alertReceived,
